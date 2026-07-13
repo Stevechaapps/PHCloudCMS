@@ -135,7 +135,7 @@ function serveOnboardingUI(c: Context): Response {
             }
             errEl.textContent = msg;
           } else {
-            window.location.href = '/';
+            window.location.href = '/admin';
           }
         });
       </script>

@@ -177,14 +177,21 @@ app.post('/api/install', async (c) => {
 
     const adminUsername = String(body.adminUsername ?? 'admin');
     const adminPasswordHash = await hashPassword(adminPassword);
-    await db.prepare("INSERT OR REPLACE INTO admins (username, password_hash) VALUES (?, ?)")
+    const result = await db.prepare("INSERT OR REPLACE INTO admins (username, password_hash) VALUES (?, ?)")
       .bind(adminUsername, adminPasswordHash).run();
 
     // Set configured status LAST so partial failures don't lock out re-install
     await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('status', 'configured')").run();
 
     await c.env.CACHE.delete('cms:config');
-    return c.redirect('/');
+
+    // Auto-login after install (return JSON, not redirect — fetch() doesn't
+    // reliably set cookies from redirect responses on all platforms)
+    const sessionId = crypto.randomUUID();
+    const adminId = result.meta.last_row_id;
+    await c.env.CACHE.put(`session:${sessionId}`, String(adminId), { expirationTtl: SESSION_TTL });
+    setCookie(c, SESSION_COOKIE, sessionId, { maxAge: SESSION_TTL, path: '/', httpOnly: true, sameSite: 'Lax', secure: true });
+    return c.json({ ok: true });
   } catch (err) {
     // Surface the real error so install failures are diagnosable from the
     // wizard UI instead of a generic "Check your D1 binding".
@@ -352,7 +359,7 @@ function renderPost(post: { title: string; content: string; updated_at: string }
 }
 
 function renderHomepage(siteName: string): string {
-  return '<h1>' + esc(siteName) + '</h1><p style="color:#64748b;margin-bottom:2rem;">Welcome. Content served from Cloudflare D1.</p><p style="color:#64748b;">Create your first post in the <a href="/admin">admin panel</a>.</p>';
+  return '<h1>' + esc(siteName) + '</h1><p style="color:#64748b;margin-bottom:2rem;">Welcome. Content served from Cloudflare D1.</p><p style="color:#64748b;"><a href="/admin/login">Log in</a> to manage your site.</p>';
 }
 
 function markdownToHtml(md: string): string {
