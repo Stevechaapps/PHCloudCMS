@@ -61,7 +61,11 @@ export class CMSRegistry {
     let current = { ...initialPayload };
     const fns = this.hooks.get(hookName) ?? [];
     for (const fn of fns) {
-      current = await fn(current);
+      try {
+        current = await fn(current);
+      } catch {
+        // Skip failed hooks so one bad plugin doesn't break the page
+      }
     }
     return current;
   }

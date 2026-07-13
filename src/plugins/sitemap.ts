@@ -8,14 +8,14 @@ export function initSitemapPlugin(registry: CMSRegistry): void {
 }
 
 const sitemapHook: PluginHook = (payload) => {
-  const posts = (payload.posts as Array<{ slug: string; updatedAt: string }> | undefined) ?? [];
+  const posts = (payload.posts as Array<{ slug: string; updated_at: string }> | undefined) ?? [];
   const baseUrl = String(payload.baseUrl ?? '').replace(/\/$/, '');
 
   const urls = posts
     .filter((p) => p.slug)
     .map((p) => `  <url>
     <loc>${baseUrl}/${escapeXml(p.slug)}</loc>
-    <lastmod>${escapeXml(p.updatedAt)}</lastmod>
+    <lastmod>${escapeXml(p.updated_at)}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`)

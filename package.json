@@ -11,8 +11,7 @@
     "lint:fix": "prettier --write src/ wrangler.jsonc"
   },
   "dependencies": {
-    "hono": "^4.12.29",
-    "zod": "^4.4.3"
+    "hono": "^4.12.29"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260712.1",

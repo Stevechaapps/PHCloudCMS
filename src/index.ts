@@ -29,7 +29,7 @@ app.use('*', onboardingGuard);
 // ── Auth ──────────────────────────────────────────────────────────
 
 app.post('/api/auth/login', async (c) => {
-  const { username, password } = await c.req.parseBody<{ username?: string; password?: string }>();
+  const { username, password } = await c.req.json<{ username?: string; password?: string }>();
   const db = c.env.DB;
   const admin = await db.prepare(
     "SELECT id, password_hash FROM admins WHERE username = ?"
@@ -65,37 +65,36 @@ async function requireAuth(c: Context): Promise<number | Response> {
 
 app.post('/api/admin/posts', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
 
-  const body = await c.req.parseBody<{
-    title: string;
-    slug: string;
-    content: string;
+  const body = await c.req.json<{
+    title?: string;
+    slug?: string;
+    content?: string;
     excerpt?: string;
-    published?: string;
+    published?: boolean;
   }>();
   const db = c.env.DB;
   const now = new Date().toISOString();
   const result = await db.prepare(
     "INSERT INTO posts (title, slug, content, excerpt, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(
-    String(body.title ?? ''),
-    String(body.slug ?? ''),
-    String(body.content ?? ''),
-    String(body.excerpt ?? ''),
-    body.published === 'on' || body.published === '1' ? 1 : 0,
+    body.title ?? '',
+    body.slug ?? '',
+    body.content ?? '',
+    body.excerpt ?? '',
+    body.published === true ? 1 : 0,
     now,
     now,
   ).run();
 
   await c.env.CACHE.delete('cms:posts:pub');
-  await c.env.CACHE.delete('cms:config');
   return c.json({ id: result.meta.last_row_id });
 });
 
 app.get('/api/admin/posts', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
 
   const rows = await c.env.DB.prepare(
     "SELECT id, title, slug, published, updated_at FROM posts ORDER BY updated_at DESC"
@@ -105,48 +104,47 @@ app.get('/api/admin/posts', async (c) => {
 
 app.get('/api/admin/posts/:id', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
 
   const id = c.req.param('id');
-  const post = await c.env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first();
+  const post = await c.env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first<DbPost>();
   if (!post) return c.body(JSON.stringify({ error: 'Not found' }), 404, { 'Content-Type': 'application/json' });
   return c.json(post);
 });
 
 app.patch('/api/admin/posts/:id', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
 
   const id = c.req.param('id');
-  const body = await c.req.parseBody<{
+  const body = await c.req.json<{
     title?: string;
     slug?: string;
     content?: string;
     excerpt?: string;
-    published?: string;
+    published?: boolean;
   }>();
   const now = new Date().toISOString();
 
   await c.env.DB.prepare(
     "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, updated_at=? WHERE id=?"
   ).bind(
-    String(body.title ?? ''),
-    String(body.slug ?? ''),
-    String(body.content ?? ''),
-    String(body.excerpt ?? ''),
-    body.published === 'on' || body.published === '1' ? 1 : 0,
+    body.title ?? '',
+    body.slug ?? '',
+    body.content ?? '',
+    body.excerpt ?? '',
+    body.published === true ? 1 : 0,
     now,
     id,
   ).run();
 
   await c.env.CACHE.delete('cms:posts:pub');
-  await c.env.CACHE.delete('cms:config');
   return c.json({ ok: true });
 });
 
 app.delete('/api/admin/posts/:id', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
 
   await c.env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(c.req.param('id')).run();
   await c.env.CACHE.delete('cms:posts:pub');
@@ -161,27 +159,29 @@ app.post('/api/install', async (c) => {
   try {
     const body = await c.req.parseBody();
     const siteName = String(body.siteName ?? 'My Site');
-    const seo = body.plugin_seo === 'on';
-    const sitemap = body.plugin_sitemap === 'on';
+    const adminPassword = String(body.adminPassword ?? '');
+    if (adminPassword.length < 8) {
+      return c.body(JSON.stringify({ error: 'Password must be at least 8 characters' }), 400, { 'Content-Type': 'application/json' });
+    }
 
     await migrate(db);
     await seed(db, siteName);
 
-    if (seo) await db.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES ('seo', 1)").run();
-    else await db.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES ('seo', 0)").run();
-    if (sitemap) await db.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES ('sitemap', 1)").run();
-    else await db.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES ('sitemap', 0)").run();
-    // Ensure every bundled plugin has a row (defaults to 0 / inactive)
+    const seo = body.plugin_seo === 'on';
+    const sitemap = body.plugin_sitemap === 'on';
     for (const p of AVAILABLE_PLUGINS) {
       await db.prepare("INSERT OR IGNORE INTO plugins (id, active) VALUES (?, 0)").bind(p.id).run();
     }
+    if (seo) await db.prepare("UPDATE plugins SET active = 1 WHERE id = 'seo'").run();
+    if (sitemap) await db.prepare("UPDATE plugins SET active = 1 WHERE id = 'sitemap'").run();
 
     const adminUsername = String(body.adminUsername ?? 'admin');
-    const adminPasswordHash = await hashPassword(String(body.adminPassword ?? ''));
-    // INSERT OR REPLACE so re-running the wizard after a partial install
-    // can't trip the UNIQUE(username) constraint.
+    const adminPasswordHash = await hashPassword(adminPassword);
     await db.prepare("INSERT OR REPLACE INTO admins (username, password_hash) VALUES (?, ?)")
       .bind(adminUsername, adminPasswordHash).run();
+
+    // Set configured status LAST so partial failures don't lock out re-install
+    await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('status', 'configured')").run();
 
     await c.env.CACHE.delete('cms:config');
     return c.redirect('/');
@@ -226,25 +226,25 @@ app.get('/sitemap.xml', async (c) => {
 
 app.get('/admin', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
   return c.html(adminShell('Dashboard', dashboardBody()));
 });
 
 app.get('/admin/posts', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
   return c.html(adminShell('Posts', postsBody()));
 });
 
 app.get('/admin/new', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
   return c.html(adminShell('New Post', newPostBody()));
 });
 
 app.get('/admin/edit/:id', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
   const id = c.req.param('id');
   const post = await c.env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first<DbPost>();
   if (!post) return c.notFound();
@@ -260,10 +260,10 @@ app.get('/admin/login', (c) => {
 
 app.patch('/api/admin/plugins/:id', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
   const id = c.req.param('id');
-  const { active } = await c.req.parseBody<{ active?: string }>();
-  await c.env.DB.prepare("UPDATE plugins SET active = ? WHERE id = ?").bind(active === 'on' || active === '1' ? 1 : 0, id).run();
+  const { active } = await c.req.json<{ active?: boolean }>();
+  await c.env.DB.prepare("UPDATE plugins SET active = ? WHERE id = ?").bind(active === true ? 1 : 0, id).run();
   await c.env.CACHE.delete('cms:plugins');
   return c.json({ ok: true });
 });
@@ -272,7 +272,7 @@ app.patch('/api/admin/plugins/:id', async (c) => {
 
 app.get('/admin/plugins', async (c) => {
   const auth = await requireAuth(c);
-  if (typeof auth === 'object' && 'status' in auth) return auth;
+  if (auth instanceof Response) return auth;
   const rows = await c.env.DB.prepare("SELECT id, active FROM plugins").all<{ id: string; active: number }>();
   const activeSet = new Set(rows.results.filter((p) => p.active === 1).map((p) => p.id));
   return c.html(adminShell('Plugins', pluginsBody(AVAILABLE_PLUGINS, activeSet)));
@@ -286,7 +286,9 @@ function initActivePlugins(registry: CMSRegistry, active: Record<string, boolean
   // new plugins: add an `if (active.<id>)` line here
 }
 
-// ── Public pages (catch-all — must be after admin routes) ─────────
+app.get('/health', (c) => c.json({ ok: true }));
+
+// ── Public pages (catch-all — must be after all specific routes) ──
 
 app.get('/:slug?', async (c) => {
   const registry = new CMSRegistry();
@@ -305,40 +307,44 @@ app.get('/:slug?', async (c) => {
 
   initActivePlugins(registry, plugins);
 
-  let post: { title: string; content: string; updated_at: string } | null = null;
-
   if (slug) {
-    post = await db.prepare(
+    const post = await db.prepare(
       "SELECT title, content, updated_at FROM posts WHERE slug = ? AND published = 1"
     ).bind(slug).first<{ title: string; content: string; updated_at: string }>();
-    if (!post) return c.notFound();
-  } else {
-    post = await db.prepare(
+    if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/">Go home</a></p>', 404);
+    const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: '', markup: '', meta: { title: post.title, description: '', url: new URL(c.req.url).href } });
+    let bodyHtml = renderPost(post);
+    const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
+    bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
+    const fullHtml = shell(siteName, headPayload.markup as string, bodyHtml);
+    return c.html(fullHtml);
+  }
+
+  const post = await getCached(c, 'cms:homepage', 60, async () => {
+    return await db.prepare(
       "SELECT title, content, updated_at FROM posts WHERE published = 1 ORDER BY updated_at DESC LIMIT 1"
     ).first<{ title: string; content: string; updated_at: string }>();
-  }
+  });
 
   const title = post?.title ?? siteName;
   const meta = { title, description: '', url: new URL(c.req.url).href };
-
-  const headPayload = await registry.executePipeline('render:head', { siteName, title, markup: '', meta });
-
+  const headPayload = await registry.executePipeline('render:head', { siteName, title, description: '', markup: '', meta });
   let bodyHtml = post ? renderPost(post) : renderHomepage(siteName);
   const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
   bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-
-  const fullHtml = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />' + (headPayload.markup as string) + '</head><body><header style="border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;"><a href="/" style="font-weight:700;font-size:1.1rem;color:#0f172a;text-decoration:none;">' + esc(siteName) + '</a></header><main style="max-width:720px;margin:2rem auto;padding:0 1.5rem;">' + bodyHtml + '</main><footer style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;">Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
-
+  const fullHtml = shell(siteName, headPayload.markup as string, bodyHtml);
   return c.html(fullHtml);
 });
-
-app.get('/health', (c) => c.json({ ok: true }));
 
 export default app;
 
 // ══════════════════════════════════════════════════════════════════
 //  Render helpers
 // ══════════════════════════════════════════════════════════════════
+
+function shell(siteName: string, headMarkup: string, bodyHtml: string): string {
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />' + headMarkup + '</head><body><header style="border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;"><a href="/" style="font-weight:700;font-size:1.1rem;color:#0f172a;text-decoration:none;">' + esc(siteName) + '</a></header><main style="max-width:720px;margin:2rem auto;padding:0 1.5rem;">' + bodyHtml + '</main><footer style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;">Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
+}
 
 function renderPost(post: { title: string; content: string; updated_at: string }): string {
   const date = new Date(post.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -356,7 +362,10 @@ function markdownToHtml(md: string): string {
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" rel="noopener">$1</a>');
+  html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_, text, url) => {
+    const safeUrl = url.replace(/^javascript:/i, '').replace(/^data:/i, '');
+    return '<a href="' + safeUrl + '" rel="noopener">' + text + '</a>';
+  });
   html = html.replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:0.15rem 0.35rem;border-radius:3px;font-size:0.9em;">$1</code>');
   html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');

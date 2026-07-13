@@ -46,11 +46,7 @@ export async function seed(db: D1Database, siteName: string): Promise<void> {
   const now = new Date().toISOString();
   await db.batch([
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('site_name', ?)").bind(siteName),
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('status', 'configured')"),
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('installed_at', ?)").bind(now),
-    // Default plugins — SEO active by default
-    db.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES ('seo', 1)"),
-    db.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES ('sitemap', 1)"),
   ]);
 }
 

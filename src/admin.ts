@@ -97,7 +97,7 @@ return `<h2 style="margin-bottom:1.5rem">Dashboard</h2>
 </table></div>
 <script>
 fetch('/api/admin/posts').then(function(r){return r.json()}).then(function(posts){
-function ea(s){return s.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function ea(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 document.getElementById('total').textContent=posts.length;
 document.getElementById('pub').textContent=posts.filter(function(p){return p.published}).length;
 var tbody=document.getElementById('posts');
@@ -127,7 +127,7 @@ return `<h2 style="margin-bottom:1rem">All Posts</h2>
 </table></div>
 <script>
 fetch('/api/admin/posts').then(function(r){return r.json()}).then(function(posts){
-function ea(s){return s.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function ea(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 var tbody=document.getElementById('posts');
 if(!posts.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">No posts yet.</td></tr>';return}
 tbody.innerHTML=posts.map(function(p){return '<tr>'
@@ -181,7 +181,7 @@ title:String(fd.get('title')||''),
 slug:String(fd.get('slug')||''),
 content:String(fd.get('content')||''),
 excerpt:String(fd.get('excerpt')||''),
-published:document.getElementById('published').checked?'1':'0'
+published:document.getElementById('published').checked
 })}).then(function(res){
 if(res.ok){
 res.json().then(function(p){
@@ -241,7 +241,7 @@ title:String(fd.get('title')||''),
 slug:String(fd.get('slug')||''),
 content:String(fd.get('content')||''),
 excerpt:String(fd.get('excerpt')||''),
-published:document.getElementById('published').checked?'1':'0'
+published:document.getElementById('published').checked
 })}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Updated!'}
 else{status.style.color='#dc2626';status.textContent='Error updating post'}})});
