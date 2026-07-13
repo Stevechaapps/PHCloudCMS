@@ -7,13 +7,13 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "cms_db"
+      "database_name": "phcloudcms_db"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "cms_cache"
+      "id": "phcloudcms_cache"
     }
   ]
 }
