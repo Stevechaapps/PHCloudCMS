@@ -1,31 +1,31 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "edge-custom-cms",
+  "name": "phcloudcms",
   "compatibility_date": "2026-07-12",
   "main": "src/index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "cms_db"
+      "database_name": "phcloudcms_db"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "cms_cache"
+      "id": "phcloudcms_cache"
     }
   ],
   "r2_buckets": [
     {
       "binding": "ASSETS",
-      "bucket_name": "edge-cms-assets"
+      "bucket_name": "phcloudcms-assets"
     }
   ],
   "vectors": [
     {
       "binding": "VECTORS",
-      "index_name": "cms-vectors"
+      "index_name": "phcloudcms-vectors"
     }
   ]
 }
