@@ -32,13 +32,13 @@ Every push to your fork's `main` branch rebuilds the Worker automatically.
 
 #### Step 1 · Fork the repo
 
-1. Go to https://github.com/Stevechaapps/PHCloudCMS
+1. Go to https://github.com/Stevechaapps/phcloudcms
 2. Click **Fork** → fork it into your own GitHub account
 3. (Optional) clone it locally so you can edit `wrangler.jsonc`:
 
    ```bash
-   git clone https://github.com/your-username/PHCloudCMS.git
-   cd PHCloudCMS
+   git clone https://github.com/your-username/phcloudcms.git
+   cd phcloudcms
    ```
    You can also edit `wrangler.jsonc` directly on GitHub's web editor.
 
@@ -101,7 +101,7 @@ placeholders; just push the IDs and the next build succeeds.
 #### Step 4 · Connect your fork to Cloudflare Workers Build
 
 1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Workers Build**
-2. **Connect to Git** → authorize GitHub → select your `PHCloudCMS` fork
+2. **Connect to Git** → authorize GitHub → select your `phcloudcms` fork
 3. Set the build/deploy commands (defaults are usually fine):
    - **Build command:** `npm run build`
    - **Deploy command:** `npx wrangler deploy`
@@ -135,8 +135,8 @@ Prefer the terminal? Skip Workers Build and deploy with Wrangler directly.
 
 ```bash
 # 1. Fork on GitHub, then clone your fork
-git clone https://github.com/your-username/PHCloudCMS.git
-cd PHCloudCMS
+git clone https://github.com/your-username/phcloudcms.git
+cd phcloudcms
 npm install
 
 # 2. Authenticate Wrangler with your Cloudflare account
