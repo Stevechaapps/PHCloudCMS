@@ -1,172 +1,92 @@
 # ☁️ PHCloud CMS
 
-**The world's lightest CMS** — runs free on Cloudflare Workers.
+**The world's lightest CMS** — runs free on Cloudflare Pages.
 
 ```
-⚡ 12 files · 50KB bundle · Zero runtime dependencies · Free forever
+⚡ \~50KB bundle · Zero runtime dependencies · Free forever on Cloudflare free tier
 ```
 
 ---
 
-## 🚀 Complete Setup (fork → live site)
+## 🚀 One-Click Deploy (fork → live site in 5 minutes)
 
-This is a **template repo**. You fork it, plug in your own Cloudflare resources,
-and your CMS runs on your own Cloudflare account — free tier, no credit card.
+No CLI, no config files, no `wrangler.jsonc` to edit. Everything happens in your browser.
 
-There are two ways to deploy. **GitHub auto-deploy** is recommended (push to
-GitHub → Cloudflare rebuilds automatically). If you prefer the terminal, use the
-**CLI deploy** path instead.
+### Step 1 · Fork the repo
 
-### Prerequisites
-
-- A **GitHub** account
-- A **Cloudflare** account (free tier — https://dash.cloudflare.com)
-- For the CLI path only: Node.js 18+, npm, and the
-  [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
-
----
-
-### Path A — GitHub auto-deploy (recommended)
-
-Every push to your fork's `main` branch rebuilds the Worker automatically.
-
-#### Step 1 · Fork the repo
-
-1. Go to https://github.com/Stevechaapps/phcloudcms
+1. Go to [github.com/Stevechaapps/phcloudcms](https://github.com/Stevechaapps/phcloudcms)
 2. Click **Fork** → fork it into your own GitHub account
-3. (Optional) clone it locally so you can edit `wrangler.jsonc`:
 
-   ```bash
-   git clone https://github.com/your-username/phcloudcms.git
-   cd phcloudcms
-   ```
-   You can also edit `wrangler.jsonc` directly on GitHub's web editor.
+### Step 2 · Create D1 + KV resources
 
-#### Step 2 · Create your Cloudflare resources
+From the Cloudflare Dashboard:
 
-Both resources are **free tier** — no credit card required. You'll get two IDs.
+**D1 database** (stores posts, settings, admin accounts):
+1. **Workers & Pages → D1 → Create database**
+2. Name: `phcloudcms-db` → **Create**
 
-**D1 database** (stores posts, settings, plugins, admin accounts):
+**KV namespace** (sessions + cache):
+1. **Workers & Pages → KV → Create namespace**
+2. Name: `phcloudcms-cache` → **Create**
 
-```bash
-npx wrangler d1 create phcloudcms_db
-```
+No IDs to copy — you'll bind them by name in the next step.
 
-Copy the **database_id** from the output (a UUID like `a1c2792f-4803-4cd8-b790-...`).
+### Step 3 · Connect to Cloudflare Pages
 
-**KV namespace** (sessions + page cache):
+1. Cloudflare Dashboard → **Workers & Pages** → **Pages** → **Create a project** → **Connect to Git**
+2. Authorize GitHub → select your `phcloudcms` fork
+3. **Build settings** — leave everything default:
+   - Build command: *(leave blank)*
+   - Build output directory: *(leave blank)*
+4. Click **Save and Deploy** — the first deploy will start immediately
 
-```bash
-npx wrangler kv namespace create phcloudcms_cache
-```
+### Step 4 · Add D1 + KV bindings
 
-Copy the **id** from the output (a hex string like `e29b8a3c...` — **not** the name).
+After the first deploy completes:
 
-> Don't want the CLI? You can create both from the Cloudflare dashboard too:
-> **Workers & Pages → D1 → Create database**, and **Workers & Pages → KV → Create namespace**. Grab the IDs from each resource's page.
+1. Go to your Pages project → **Settings** → **Functions**
+2. Under **D1 database bindings**, click **Add binding**:
+   - Variable name: `DB`
+   - Database: select `phcloudcms-db` (or whatever you named it)
+3. Under **KV namespace bindings**, click **Add binding**:
+   - Variable name: `CACHE`
+   - KV namespace: select `phcloudcms-cache` (or whatever you named it)
+4. Click **Save**
+5. Go to **Deployments** → find your deployment → click **...** → **Retry deployment**
 
-#### Step 3 · Put your IDs in `wrangler.jsonc`
+### Step 5 · Run the onboarding wizard
 
-Open `wrangler.jsonc` and replace the two placeholders with the IDs from Step 2:
-
-```jsonc
-{
-  "name": "phcloudcms",
-  "main": "src/index.ts",
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "phcloudcms_db",
-      "database_id": "YOUR_D1_DATABASE_ID"   // ← from `wrangler d1 create`
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "CACHE",
-      "id": "YOUR_KV_NAMESPACE_ID"            // ← hex string from `wrangler kv namespace create`
-    }
-  ]
-}
-```
-
-These IDs are **identifiers, not secrets** — only your Cloudflare account can
-reach them through the deployed Worker. It's safe to commit them to your fork.
-
-Commit the change and push to your fork's `main` branch.
-Do this **before** connecting to Cloudflare (Step 4) — the very first build reads
-`wrangler.jsonc` to bind your D1 + KV, so the real IDs must be committed first.
-If you connect before pushing the IDs, the first build will fail on the
-placeholders; just push the IDs and the next build succeeds.
-
-#### Step 4 · Connect your fork to Cloudflare Workers Build
-
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Workers Build**
-2. **Connect to Git** → authorize GitHub → select your `phcloudcms` fork
-3. Set the build/deploy commands (defaults are usually fine):
-   - **Build command:** `npm run build`
-   - **Deploy command:** `npx wrangler deploy`
-4. **Save and Deploy**. The build runs `tsc --noEmit` then deploys the Worker.
-
-Your Worker is live at a `*.workers.dev` URL (or a custom domain you add later).
-Every future push to `main` rebuilds automatically.
-
-#### Step 5 · Run the onboarding wizard
-
-1. Visit your Worker URL in the browser
+1. Visit your Pages URL (e.g., `https://your-project.pages.dev`)
 2. The **Setup wizard** appears on first load — enter:
    - Site name
    - Admin username + password (≥ 8 characters)
-   - Toggle the bundled SEO + Sitemap plugins on/off
+   - Toggle SEO + Sitemap plugins on/off
 3. Click **Initialize Core Systems**
 
-The wizard **automatically creates all database tables** — no manual migration
-commands needed. You're done.
+The wizard creates all database tables automatically and logs you straight into the admin dashboard.
 
-#### Step 6 · Log in and start posting
+**You're done.** That's it.
 
-Go to `https://<your-worker>.workers.dev/admin/login`, sign in with the
-credentials you just set, and create your first post. ✅
+Every future push to `main` auto-deploys. To add custom domains, go to **Pages project → Custom domains**.
 
 ---
 
-### Path B — CLI manual deploy
-
-Prefer the terminal? Skip Workers Build and deploy with Wrangler directly.
+## 🧪 Local Development
 
 ```bash
-# 1. Fork on GitHub, then clone your fork
+# Clone your fork
 git clone https://github.com/your-username/phcloudcms.git
 cd phcloudcms
 npm install
 
-# 2. Authenticate Wrangler with your Cloudflare account
-npx wrangler login
-
-# 3. Create your resources (free tier) and copy the IDs from the output
-npx wrangler d1 create phcloudcms_db
-npx wrangler kv namespace create phcloudcms_cache
-
-# 4. Paste those IDs into wrangler.jsonc (database_id + CACHE id), then:
-
-# 5. (Optional) run locally — http://localhost:8787
+# Run locally (auto-creates local D1 + KV)
 npm run dev
 
-# 6. Deploy to Cloudflare
-npm run deploy
+# Type check
+npx tsc --noEmit
 ```
 
-Then visit your Worker URL → run the onboarding wizard → log in at `/admin/login`.
-
----
-
-### Local development notes
-
-```bash
-npm run dev      # local dev server on :8787 (auto-creates tables on first /api/install)
-npm run build    # TypeScript type check (tsc --noEmit)
-npm run deploy   # deploy to Cloudflare (requires wrangler login + IDs in wrangler.jsonc)
-npm run lint     # prettier --check
-```
+The dev server runs at `http://localhost:8788`. Local D1 + KV are created automatically by wrangler.
 
 ---
 
@@ -174,9 +94,9 @@ npm run lint     # prettier --check
 
 | Feature | Description |
 |---------|-------------|
-| **Admin Panel** | Create/edit posts, manage plugins, dark theme |
+| **Admin Panel** | Create/edit posts, manage plugins |
 | **Plugin System** | WordPress-style hooks, TypeScript, GitHub distribution |
-| **Onboarding Wizard** | Browser-based setup — no `wrangler secret put` |
+| **Onboarding Wizard** | Browser-based setup — no CLI needed |
 | **SEO Built-in** | Meta tags, Open Graph, XML sitemap |
 | **Markdown Editor** | Write posts in markdown, rendered to HTML |
 | **Session Auth** | PBKDF2 hashing, HTTP-only cookies, KV sessions |
@@ -189,10 +109,10 @@ npm run lint     # prettier --check
 
 | Component | Technology |
 |-----------|------------|
-| Runtime | Cloudflare Workers (V8 isolates) |
+| Platform | Cloudflare Pages |
 | Framework | Hono v4.12 |
 | Database | D1 (SQLite) |
-| Cache | KV namespaces |
+| Cache | KV Namespaces |
 | Language | TypeScript 7.0 |
 | Auth | PBKDF2 (native Web Crypto) |
 
@@ -202,46 +122,15 @@ npm run lint     # prettier --check
 
 ## 📦 Plugin System
 
-PHCloud uses a **GitHub-based plugin marketplace**:
+PHCloud uses a **GitHub-based plugin marketplace** — no central store, no uploads, no approval process.
 
 ```
 Developer → Creates plugin → Publishes on GitHub
                 ↓
-Site Owner → Downloads → Copies to fork → Commits → Enables in admin
+Site Owner → Downloads .ts file → Copies to fork → Commits → Enables in admin
 ```
 
-### Example Plugin
-
-```typescript
-// src/plugins/analytics.ts
-import type { PluginHook, CMSRegistry } from '../cms/registry.js';
-
-export function initAnalytics(registry: CMSRegistry): void {
-  registry.register('render:head', injectGA);
-}
-
-const injectGA: PluginHook = (payload) => {
-  const script = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXX"></script>`;
-  return { ...payload, markup: (payload.markup || '') + '\n' + script };
-};
-```
-
-📖 **See:** [`PLUGIN_DEV.md`](./PLUGIN_DEV.md) — complete developer guide.
-
----
-
-## 🎨 Theme System
-
-Themes work exactly like plugins — copy a `.ts` file, enable in admin, done. Every theme is **mobile-first**, **touch-friendly**, and **dark-mode ready**:
-
-- Mobile breakpoints: default → 768px → 1024px
-- Touch targets: ≥44px (thumb-friendly)
-- Font size: ≥16px (readable without zoom)
-- Dark mode: `prefers-color-scheme` support
-
-**Browse themes:** [`THEMES.md`](./THEMES.md) — official gallery with install instructions.
-
-📖 **Build your own:** [`THEME_STARTER.md`](./THEME_STARTER.md) — template + publishing guide.
+**See:** [`PLUGIN_STARTER.md`](./PLUGIN_STARTER.md)
 
 ---
 
@@ -249,16 +138,12 @@ Themes work exactly like plugins — copy a `.ts` file, enable in admin, done. E
 
 | Feature | WordPress | PHCloud CMS |
 |---------|-----------|-------------|
-| **Runtime** | PHP + MySQL | Cloudflare Workers |
 | **Hosting Cost** | $5-30/mo | Free |
 | **Bundle Size** | 40MB+ | ~50KB |
-| **Files** | Thousands | 12 |
 | **Plugin Install** | Upload ZIP | GitHub fork |
 | **Type Safety** | No | Full TypeScript |
 | **Edge Native** | No | Yes |
 | **Setup Time** | 30+ min | 5 min |
-
-> WordPress was built for shared hosting in 2003. PHCloud was built for the edge in 2026.
 
 ---
 
@@ -267,10 +152,8 @@ Themes work exactly like plugins — copy a `.ts` file, enable in admin, done. E
 | Doc | Purpose |
 |-----|---------|
 | [`README.md`](./README.md) | Getting started |
-| [`PLUGIN_DEV.md`](./PLUGIN_DEV.md) | Build plugins |
-| [`PLUGIN_STARTER.md`](./PLUGIN_STARTER.md) | Plugin template |
+| [`PLUGIN_STARTER.md`](./PLUGIN_STARTER.md) | Build plugins |
 | [`THEME_STARTER.md`](./THEME_STARTER.md) | Build themes |
-| [`THEMES.md`](./THEMES.md) | Theme gallery |
 | [`BRAND.md`](./BRAND.md) | Brand guidelines |
 
 ---
@@ -283,4 +166,4 @@ Themes work exactly like plugins — copy a `.ts` file, enable in admin, done. E
 
 **PHCloud CMS** — Built for the edge. Free forever.
 
-_Made with ☁️ on Cloudflare Workers_
+_Made with ☁️ on Cloudflare Pages_
