@@ -10,22 +10,90 @@
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- Node.js 18+ and npm
+- Cloudflare account (free tier)
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (optional, for local management)
+
+---
+
+### Step 1: Fork the Repo
+
 ```bash
-# 1. Fork this repo
-github.com/steve/phcloud → Your fork
-
-# 2. Create D1 + KV (free tier)
-wrangler d1 create cms_db
-wrangler kv:namespace create cms_cache
-
-# 3. Update wrangler.jsonc with your IDs
-
-# 4. Deploy
+# Fork this repo on GitHub → clone your fork
+git clone https://github.com/your-username/PHCloudCMS.git
+cd PHCloudCMS
 npm install
+```
+
+---
+
+### Step 2: Create Cloudflare Resources
+
+Both resources are **free tier** — no credit card required.
+
+#### Create D1 Database (posts & config)
+
+```bash
+npx wrangler d1 create phcloudcms_db
+```
+
+Output shows the database ID — keep it for wrangler.jsonc.
+
+#### Create KV Namespace (caching)
+
+```bash
+npx wrangler kv:namespace create phcloudcms_cache
+```
+
+Output shows the namespace **ID** (looks like: `abcd1234...`) — copy this.
+
+---
+
+### Step 3: Update wrangler.jsonc
+
+Edit `wrangler.jsonc` with your KV namespace ID:
+
+```jsonc
+{
+  "name": "phcloudcms",
+  "d1_databases": [
+    { "binding": "DB", "database_name": "phcloudcms_db" }
+  ],
+  "kv_namespaces": [
+    { "binding": "CACHE", "id": "YOUR_KV_ID_HERE" }  // ← paste the ID from Step 2
+  ]
+}
+```
+
+---
+
+### Step 4: Run Database Migrations
+
+Initialize the database schema (posts, config, plugins tables):
+
+```bash
+# Local development
+npm run db:migrate:local
+
+# Or on Cloudflare (after auth)
+npm run db:migrate:remote
+```
+
+---
+
+### Step 5: Deploy
+
+```bash
+# Test locally first
+npm run dev
+
+# Deploy to Cloudflare
 npm run deploy
 ```
 
-Visit your site → complete onboarding wizard → done.
+Visit your Worker URL → complete the onboarding wizard to set admin password → done!
 
 ---
 
@@ -52,7 +120,6 @@ Visit your site → complete onboarding wizard → done.
 | Framework | Hono v4.12 |
 | Database | D1 (SQLite) |
 | Cache | KV namespaces |
-| Storage | R2 buckets |
 | Language | TypeScript 7.0 |
 | Auth | PBKDF2 (native Web Crypto) |
 
