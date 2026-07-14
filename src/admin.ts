@@ -149,12 +149,12 @@ export function newPostBody(): string {
 return `<h2 style="margin-bottom:1.5rem">New Post</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
-<div class="form-group"><label for="title">Title</label><input type="text" id="title" required /></div>
-<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" required /></div>
+<div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required /></div>
+<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required /></div>
 </div>
-<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" /></div>
-<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" required></textarea></div>
-<div class="form-group"><label><input type="checkbox" id="published" /> Publish immediately</label></div>
+<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" /></div>
+<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" name="content" required></textarea></div>
+<div class="form-group"><label><input type="checkbox" id="published" name="published" /> Publish immediately</label></div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Save Post</button>
 <a href="/admin/posts" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>
@@ -208,12 +208,12 @@ var checked = (post.published == 1 || post.published === '1') ? 'checked' : '';
 return `<h2 style="margin-bottom:1.5rem">Edit Post</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
-<div class="form-group"><label for="title">Title</label><input type="text" id="title" required value="${escAttr(post.title)}" /></div>
-<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" required value="${escAttr(post.slug)}" /></div>
+<div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(post.title)}" /></div>
+<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(post.slug)}" /></div>
 </div>
-<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" value="${escAttr(String(post.excerpt ?? ''))}" /></div>
-<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" required>${escHtml(post.content)}</textarea></div>
-<div class="form-group"><label><input type="checkbox" id="published" ${checked} /> Published</label></div>
+<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" value="${escAttr(String(post.excerpt ?? ''))}" /></div>
+<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" name="content" required>${escHtml(post.content)}</textarea></div>
+<div class="form-group"><label><input type="checkbox" id="published" name="published" ${checked} /> Published</label></div>
 <div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${escAttr(post.updated_at)}</div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Update Post</button>
