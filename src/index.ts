@@ -338,13 +338,10 @@ app.get('/admin/plugins', async (c) => {
 });
 
 // ── Manual migration endpoint ─────────────────────────────────────
-// Needed when schema changes are added after initial install.
-// Visit once after deploying a schema update:
-//   GET /api/migrate (requires auth)
+// Temporary — call once after deploying a schema update:
+//   curl https://ph.stevechaapps.workers.dev/api/migrate
 
-app.post('/api/migrate', async (c) => {
-  const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
+app.get('/api/migrate', async (c) => {
   try {
     await migrate(c.env.DB);
     return c.json({ ok: true, message: 'Migration complete' });
