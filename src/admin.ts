@@ -289,12 +289,14 @@ content: string;
 excerpt?: string;
 published: string | number;
 publish_at?: string | null;
+preview_token?: string | null;
 updated_at: string;
 }): string {
 var id = String(post.id);
 var checked = (post.published == 1 || post.published === '1') ? 'checked' : '';
 var hasSchedule = !!post.publish_at;
 var scheduleChecked = hasSchedule ? 'checked' : '';
+var previewLink = post.preview_token ? '/' + post.slug + '?preview=' + post.preview_token : '';
 return `<h2>Edit Post</h2>
 <form id="form" style="max-width:800px">
 <div class="card">
@@ -334,7 +336,8 @@ return `<h2>Edit Post</h2>
 <script>
 function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}
 </script>
-<div style="font-size:0.85rem;color:#64748b;margin-bottom:1rem">Last updated: ${post.updated_at}</div>
+<div style="font-size:0.85rem;color:#64748b;margin-bottom:0.75rem">Last updated: ${post.updated_at}</div>
+${previewLink ? '<div style="margin-bottom:0.75rem"><a href="' + previewLink + '" target="_blank" class="btn btn-sm">Preview</a></div>' : ''}
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Update Post</button>
 <a href="/admin/posts" class="btn btn-secondary">Cancel</a>

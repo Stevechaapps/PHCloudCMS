@@ -14,7 +14,7 @@ import { getCookie, setCookie } from 'hono/cookie';
 import { adminShell, dashboardBody, postsBody, newPostBody, editBody, loginForm, pluginsBody, pagesBody, newPageBody, editPageBody, categoriesBody, navBody, settingsBody } from './admin.js';
 
 type Post = { title: string; content: string; updated_at: string };
-type DbPost = Post & { id: number; slug: string; excerpt: string; published: number; type: string; publish_at: string | null };
+type DbPost = Post & { id: number; slug: string; excerpt: string; published: number; type: string; publish_at: string | null; preview_token: string | null };
 type NavItem = { label: string; url: string };
 
 type Env = {
@@ -83,8 +83,9 @@ app.post('/api/admin/posts', async (c) => {
   const now = new Date().toISOString();
   const publishAt = body.publish_at || null;
   const published = body.publish_at ? 0 : (body.published === true ? 1 : 0);
+  const previewToken = crypto.randomUUID();
   const result = await db.prepare(
-    "INSERT INTO posts (title, slug, content, excerpt, published, publish_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO posts (title, slug, content, excerpt, published, publish_at, preview_token, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
   ).bind(
     body.title ?? '',
     body.slug ?? '',
@@ -92,6 +93,7 @@ app.post('/api/admin/posts', async (c) => {
     body.excerpt ?? '',
     published,
     publishAt,
+    previewToken,
     now,
     now,
   ).run();
@@ -105,7 +107,7 @@ app.post('/api/admin/posts', async (c) => {
 
   await c.env.CACHE.delete('cms:posts:pub');
   await c.env.CACHE.delete('cms:homepage');
-  return c.json({ id: postId });
+  return c.json({ id: postId, preview_token: previewToken });
 });
 
 app.get('/api/admin/posts', async (c) => {
@@ -145,9 +147,10 @@ app.patch('/api/admin/posts/:id', async (c) => {
   const now = new Date().toISOString();
   const publishAt = body.publish_at || null;
   const published = body.publish_at ? 0 : (body.published === true ? 1 : 0);
+  const previewToken = crypto.randomUUID();
 
   await c.env.DB.prepare(
-    "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, publish_at=?, updated_at=? WHERE id=?"
+    "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, publish_at=?, preview_token=?, updated_at=? WHERE id=?"
   ).bind(
     body.title ?? '',
     body.slug ?? '',
@@ -155,6 +158,7 @@ app.patch('/api/admin/posts/:id', async (c) => {
     body.excerpt ?? '',
     published,
     publishAt,
+    previewToken,
     now,
     id,
   ).run();
@@ -168,7 +172,7 @@ app.patch('/api/admin/posts/:id', async (c) => {
 
   await c.env.CACHE.delete('cms:posts:pub');
   await c.env.CACHE.delete('cms:homepage');
-  return c.json({ ok: true });
+  return c.json({ ok: true, preview_token: previewToken });
 });
 
 app.delete('/api/admin/posts/:id', async (c) => {
@@ -286,7 +290,7 @@ app.get('/admin/edit/:id', async (c) => {
   const id = c.req.param('id');
   const post = await c.env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first<DbPost>();
   if (!post) return c.notFound();
-  return c.html(adminShell('Edit Post', editBody({ id: post.id, title: post.title, slug: post.slug, content: post.content, excerpt: post.excerpt, published: post.published, publish_at: post.publish_at, updated_at: post.updated_at })));
+  return c.html(adminShell('Edit Post', editBody({ id: post.id, title: post.title, slug: post.slug, content: post.content, excerpt: post.excerpt, published: post.published, publish_at: post.publish_at, preview_token: post.preview_token, updated_at: post.updated_at })));
 });
 
 app.get('/admin/pages', async (c) => {
@@ -617,10 +621,15 @@ app.get('/:slug?', async (c) => {
   initActivePlugins(registry, plugins);
 
   if (slug) {
+    const preview = c.req.query('preview');
     const post = await db.prepare(
-      "SELECT slug, title, content, excerpt, updated_at, type FROM posts WHERE slug = ? AND published = 1"
-    ).bind(slug).first<{ slug: string; title: string; content: string; excerpt: string; updated_at: string; type: string }>();
+      "SELECT slug, title, content, excerpt, updated_at, type, published, preview_token FROM posts WHERE slug = ?"
+    ).bind(slug).first<{ slug: string; title: string; content: string; excerpt: string; updated_at: string; type: string; published: number; preview_token: string | null }>();
+
     if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/" class="back-link">Go home</a></p>', 404);
+    if (!post.published) {
+      if (!preview || preview !== post.preview_token) return c.html('<h1>404 — Not found</h1><p><a href="/" class="back-link">Go home</a></p>', 404);
+    }
 
     let bodyHtml: string;
     if (post.type === 'page') {
