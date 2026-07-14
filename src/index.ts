@@ -7,14 +7,11 @@ import { hashPassword, verifyPassword } from './cms/auth.js';
 import { AVAILABLE_PLUGINS } from './plugins/index.js';
 import { initSEOPlugin } from './plugins/seo.js';
 import { initSitemapPlugin } from './plugins/sitemap.js';
-import './themes/index.js';
-import { getTheme, getAllThemes } from './cms/theme.js';
-import type { PostView, PostListItem } from './cms/theme.js';
 import { getCookie, setCookie } from 'hono/cookie';
 import { adminShell, dashboardBody, postsBody, newPostBody, editBody, loginForm, pluginsBody, pagesBody, newPageBody, editPageBody, categoriesBody, navBody, settingsBody } from './admin.js';
 
 type Post = { title: string; content: string; updated_at: string };
-type DbPost = Post & { id: number; slug: string; excerpt: string; published: number; type: string; publish_at: string | null; preview_token: string | null };
+type DbPost = Post & { id: number; slug: string; excerpt: string; published: number; type: string };
 type NavItem = { label: string; url: string };
 
 type Env = {
@@ -76,26 +73,18 @@ app.post('/api/admin/posts', async (c) => {
     content?: string;
     excerpt?: string;
     published?: boolean;
-    publish_at?: string | null;
     category_ids?: number[];
   }>();
   const db = c.env.DB;
   const now = new Date().toISOString();
-  const publishAt = body.publish_at || null;
-  const published = body.publish_at ? 0 : (body.published === true ? 1 : 0);
-  const previewToken = crypto.randomUUID();
-  const content = body.content ?? '';
-  const excerpt = body.excerpt || autoExcerpt(content);
   const result = await db.prepare(
-    "INSERT INTO posts (title, slug, content, excerpt, published, publish_at, preview_token, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO posts (title, slug, content, excerpt, published, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(
     body.title ?? '',
     body.slug ?? '',
-    content,
-    excerpt,
-    published,
-    publishAt,
-    previewToken,
+    body.content ?? '',
+    body.excerpt ?? '',
+    body.published === true ? 1 : 0,
     now,
     now,
   ).run();
@@ -109,7 +98,7 @@ app.post('/api/admin/posts', async (c) => {
 
   await c.env.CACHE.delete('cms:posts:pub');
   await c.env.CACHE.delete('cms:homepage');
-  return c.json({ id: postId, preview_token: previewToken });
+  return c.json({ id: postId });
 });
 
 app.get('/api/admin/posts', async (c) => {
@@ -117,8 +106,8 @@ app.get('/api/admin/posts', async (c) => {
   if (auth instanceof Response) return auth;
 
   const rows = await c.env.DB.prepare(
-    "SELECT id, title, slug, published, publish_at, updated_at FROM posts ORDER BY updated_at DESC"
-  ).all<{ id: number; title: string; slug: string; published: number; publish_at: string | null; updated_at: string }>();
+    "SELECT id, title, slug, published, updated_at FROM posts ORDER BY updated_at DESC"
+  ).all<{ id: number; title: string; slug: string; published: number; updated_at: string }>();
   return c.json(rows.results);
 });
 
@@ -143,26 +132,18 @@ app.patch('/api/admin/posts/:id', async (c) => {
     content?: string;
     excerpt?: string;
     published?: boolean;
-    publish_at?: string | null;
     category_ids?: number[];
   }>();
   const now = new Date().toISOString();
-  const publishAt = body.publish_at || null;
-  const published = body.publish_at ? 0 : (body.published === true ? 1 : 0);
-  const previewToken = crypto.randomUUID();
-  const content = body.content ?? '';
-  const excerpt = body.excerpt || autoExcerpt(content);
 
   await c.env.DB.prepare(
-    "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, publish_at=?, preview_token=?, updated_at=? WHERE id=?"
+    "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, updated_at=? WHERE id=?"
   ).bind(
     body.title ?? '',
     body.slug ?? '',
-    content,
-    excerpt,
-    published,
-    publishAt,
-    previewToken,
+    body.content ?? '',
+    body.excerpt ?? '',
+    body.published === true ? 1 : 0,
     now,
     id,
   ).run();
@@ -176,48 +157,13 @@ app.patch('/api/admin/posts/:id', async (c) => {
 
   await c.env.CACHE.delete('cms:posts:pub');
   await c.env.CACHE.delete('cms:homepage');
-  return c.json({ ok: true, preview_token: previewToken });
+  return c.json({ ok: true });
 });
 
 app.delete('/api/admin/posts/:id', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
 
-  await c.env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(c.req.param('id')).run();
-  await c.env.CACHE.delete('cms:posts:pub');
-  await c.env.CACHE.delete('cms:homepage');
-  await c.env.CACHE.delete('cms:config');
-  return c.json({ ok: true });
-});
-
-app.patch('/api/admin/posts/:id/publish', async (c) => {
-  const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
-  const now = new Date().toISOString();
-  const previewToken = crypto.randomUUID();
-  await c.env.DB.prepare(
-    "UPDATE posts SET published=1, publish_at=NULL, preview_token=?, updated_at=? WHERE id=?"
-  ).bind(previewToken, now, c.req.param('id')).run();
-  await c.env.CACHE.delete('cms:posts:pub');
-  await c.env.CACHE.delete('cms:homepage');
-  return c.json({ ok: true });
-});
-
-app.patch('/api/admin/posts/:id/unpublish', async (c) => {
-  const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
-  const now = new Date().toISOString();
-  await c.env.DB.prepare(
-    "UPDATE posts SET published=0, updated_at=? WHERE id=?"
-  ).bind(now, c.req.param('id')).run();
-  await c.env.CACHE.delete('cms:posts:pub');
-  await c.env.CACHE.delete('cms:homepage');
-  return c.json({ ok: true });
-});
-
-app.delete('/api/admin/posts/:id/hard', async (c) => {
-  const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
   await c.env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(c.req.param('id')).run();
   await c.env.CACHE.delete('cms:posts:pub');
   await c.env.CACHE.delete('cms:homepage');
@@ -277,7 +223,6 @@ app.post('/api/install', async (c) => {
 app.get('/sitemap.xml', async (c) => {
   const registry = new CMSRegistry();
   const db = c.env.DB;
-  await publishScheduled(db);
 
   const activePlugins = await getCached(c, 'cms:plugins', 300, async () => {
     const rows = await db.prepare("SELECT id, active FROM plugins").all<{ id: string; active: number }>();
@@ -329,7 +274,7 @@ app.get('/admin/edit/:id', async (c) => {
   const id = c.req.param('id');
   const post = await c.env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first<DbPost>();
   if (!post) return c.notFound();
-  return c.html(adminShell('Edit Post', editBody({ id: post.id, title: post.title, slug: post.slug, content: post.content, excerpt: post.excerpt, published: post.published, publish_at: post.publish_at, preview_token: post.preview_token, updated_at: post.updated_at })));
+  return c.html(adminShell('Edit Post', editBody({ id: post.id, title: post.title, slug: post.slug, content: post.content, excerpt: post.excerpt, published: post.published, updated_at: post.updated_at })));
 });
 
 app.get('/admin/pages', async (c) => {
@@ -368,10 +313,8 @@ app.get('/admin/nav', async (c) => {
 app.get('/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const imgurClientId = (await getSetting(c.env.DB, 'imgur_client_id')) ?? '';
-  const themeId = (await getSetting(c.env.DB, 'theme')) ?? 'default';
-  const available = getAllThemes().map((t) => ({ id: t.id, name: t.name }));
-  return c.html(adminShell('Settings', settingsBody({ imgur_client_id: imgurClientId, theme: themeId, available_themes: available })));
+  const imgurClientId = await getSetting(c.env.DB, 'imgur_client_id') ?? '';
+  return c.html(adminShell('Settings', settingsBody({ imgur_client_id: imgurClientId })));
 });
 
 app.get('/admin/login', (c) => {
@@ -391,12 +334,8 @@ app.get('/api/admin/settings', async (c) => {
 app.post('/api/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const body = await c.req.json<{ imgur_client_id?: string; theme?: string }>();
+  const body = await c.req.json<{ imgur_client_id?: string }>();
   await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('imgur_client_id', ?)").bind(body.imgur_client_id ?? '').run();
-  if (body.theme) {
-    await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('theme', ?)").bind(body.theme).run();
-    await c.env.CACHE.delete('cms:theme');
-  }
   await c.env.CACHE.delete('cms:config');
   return c.json({ ok: true });
 });
@@ -437,7 +376,6 @@ app.get('/health', (c) => c.json({ ok: true }));
 
 app.get('/feed.xml', async (c) => {
   const db = c.env.DB;
-  await publishScheduled(db);
   const siteName = await getCached(c, 'cms:config', 600, async () => {
     return await getSetting(db, 'site_name') ?? 'My Site';
   });
@@ -462,36 +400,33 @@ app.get('/feed.xml', async (c) => {
 app.get('/search', async (c) => {
   const q = c.req.query('q') ?? '';
   const db = c.env.DB;
-  await publishScheduled(db);
   const siteName = await getCached(c, 'cms:config', 600, async () => {
     return await getSetting(db, 'site_name') ?? 'My Site';
   });
 
   let bodyHtml = '<h1>Search</h1>';
-  bodyHtml += '<form action="/search" method="get" class="search-form"><input type="text" name="q" value="' + esc(q) + '" placeholder="Search posts…" /></form>';
+  bodyHtml += '<form action="/search" method="get" style="margin-bottom:2rem"><input type="text" name="q" value="' + esc(q) + '" placeholder="Search posts…" style="width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem"/></form>';
 
   if (q) {
     const rows = await db.prepare(
       "SELECT slug, title, excerpt, updated_at FROM posts WHERE published = 1 AND type = 'post' AND (title LIKE ? OR content LIKE ?) ORDER BY updated_at DESC"
     ).bind('%' + q + '%', '%' + q + '%').all<{ slug: string; title: string; excerpt: string; updated_at: string }>();
-    bodyHtml += '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem">' + rows.results.length + ' result' + (rows.results.length !== 1 ? 's' : '') + ' found for "' + esc(q) + '"</p>';
     if (rows.results.length) {
       bodyHtml += renderPostList(rows.results, '');
+    } else {
+      bodyHtml += '<p style="color:#64748b">No results found for "' + esc(q) + '"</p>';
     }
   }
 
   const registry = new CMSRegistry();
-  const themeId = await getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default');
-  const themeCss = (getTheme(themeId)?.css) ?? getTheme('default')!.css;
   const headPayload = await registry.executePipeline('render:head', { siteName, title: 'Search · ' + siteName, description: '', markup: '', meta: { title: 'Search · ' + siteName, description: '', url: new URL(c.req.url).href } });
-  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, [], themeCss));
+  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, []));
 });
 
 // ── Category pages ─────────────────────────────────────────────────
 
 app.get('/category/:slug', async (c) => {
   const db = c.env.DB;
-  await publishScheduled(db);
   const catSlug = c.req.param('slug');
   const cat = await db.prepare("SELECT id, name FROM categories WHERE slug = ?").bind(catSlug).first<{ id: number; name: string }>();
   if (!cat) return c.html('<h1>Category not found</h1><p><a href="/">Go home</a></p>', 404);
@@ -503,12 +438,10 @@ app.get('/category/:slug', async (c) => {
   const siteName = await getCached(c, 'cms:config', 600, async () => {
     return await getSetting(db, 'site_name') ?? 'My Site';
   });
-  const bodyHtml = '<h1>' + esc(cat.name) + '</h1>' + (rows.results.length ? renderPostList(rows.results, '') : '<p style="color:var(--text-light)">No posts in this category.</p>');
+  const bodyHtml = '<h1 style="margin-bottom:1rem">' + esc(cat.name) + '</h1>' + (rows.results.length ? renderPostList(rows.results, '') : '<p style="color:#64748b">No posts in this category.</p>');
   const registry = new CMSRegistry();
-  const themeId = await getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default');
-  const themeCss = (getTheme(themeId)?.css) ?? getTheme('default')!.css;
   const headPayload = await registry.executePipeline('render:head', { siteName, title: cat.name + ' · ' + siteName, description: '', markup: '', meta: { title: cat.name + ' · ' + siteName, description: '', url: new URL(c.req.url).href } });
-  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, [], themeCss));
+  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, []));
 });
 
 // ── Admin: Categories API ──────────────────────────────────────────
@@ -618,73 +551,48 @@ app.delete('/api/admin/pages/:id', async (c) => {
   return c.json({ ok: true });
 });
 
-// ── Lazy publish — auto-publish scheduled posts ─────────────────
-
-async function publishScheduled(db: D1Database): Promise<void> {
-  const rows = await db.prepare("SELECT id FROM posts WHERE published = 0 AND publish_at IS NOT NULL AND publish_at <= datetime('now')").all<{ id: number }>();
-  if (!rows.results.length) return;
-  const ids = rows.results.map(r => r.id);
-  await db.prepare(`UPDATE posts SET published = 1, publish_at = NULL WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).run();
-}
-
 // ── Public pages (catch-all — must be after all specific routes) ──
 
 app.get('/:slug?', async (c) => {
   const registry = new CMSRegistry();
   const db = c.env.DB;
   const slug = c.req.param('slug') ?? '';
-  await publishScheduled(db);
 
-  const [siteName, navVal, plugins, themeId] = await Promise.all([
+  const [siteName, navVal, plugins] = await Promise.all([
     getCached(c, 'cms:config', 600, async () => await getSetting(db, 'site_name') ?? 'My Site') as Promise<string>,
     getCached(c, 'cms:nav', 600, async () => await getSetting(db, 'nav') ?? '[]') as Promise<string>,
     getCached(c, 'cms:plugins', 300, async () => {
       const rows = await db.prepare("SELECT id, active FROM plugins").all<{ id: string; active: number }>();
       return Object.fromEntries(rows.results.map((p) => [p.id, p.active === 1]));
     }) as Promise<Record<string, boolean>>,
-    getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default') as Promise<string>,
   ]);
 
   const nav: NavItem[] = JSON.parse(navVal);
-  const activeTheme = getTheme(themeId) ?? getTheme('default')!;
-  const themeCss = activeTheme.css;
-
-  const tpl = {
-    shell: (sn: string, h: string, b: string, n: NavItem[]) => activeTheme.shell?.(sn, h, b, n) ?? shellFull(sn, h, b, n, themeCss),
-    post: (p: PostView) => activeTheme.renderPost?.(p) ?? renderPost(p),
-    list: (posts: PostListItem[], sn: string) => activeTheme.renderPostList?.(posts, sn) ?? renderPostList(posts, sn),
-    home: (sn: string) => activeTheme.renderHomepage?.(sn) ?? renderHomepage(sn),
-  };
 
   initActivePlugins(registry, plugins);
 
   if (slug) {
-    const preview = c.req.query('preview');
     const post = await db.prepare(
-      "SELECT slug, title, content, excerpt, updated_at, type, published, preview_token FROM posts WHERE slug = ?"
-    ).bind(slug).first<{ slug: string; title: string; content: string; excerpt: string; updated_at: string; type: string; published: number; preview_token: string | null }>();
-
-    if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/" class="back-link">Go home</a></p>', 404);
-    if (!post.published) {
-      if (!preview || preview !== post.preview_token) return c.html('<h1>404 — Not found</h1><p><a href="/" class="back-link">Go home</a></p>', 404);
-    }
+      "SELECT slug, title, content, excerpt, updated_at, type FROM posts WHERE slug = ? AND published = 1"
+    ).bind(slug).first<{ slug: string; title: string; content: string; excerpt: string; updated_at: string; type: string }>();
+    if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/">Go home</a></p>', 404);
 
     let bodyHtml: string;
     if (post.type === 'page') {
-      bodyHtml = '<h1>' + esc(post.title) + '</h1><div class="post-content">' + markdownToHtml(post.content) + '</div>';
+      bodyHtml = '<h1>' + esc(post.title) + '</h1><div style="line-height:1.8">' + markdownToHtml(post.content) + '</div>';
     } else {
       const catRows = await db.prepare(
         "SELECT c.name FROM categories c JOIN post_categories pc ON c.id = pc.category_id WHERE pc.post_id = (SELECT id FROM posts WHERE slug = ?)"
       ).bind(slug).all<{ name: string }>();
       const cats = catRows.results.map((c) => c.name);
-      const catsHtml = cats.length ? '<div class="post-meta">' + cats.map((n) => '<a href="/category/' + esc(n.toLowerCase().replace(/\s+/g, '-')) + '" class="category-pill">' + esc(n) + '</a>').join('') + '</div>' : '';
-      bodyHtml = '<a href="/" class="back-link">← Back to home</a>' + tpl.post(post) + catsHtml;
+      const catsHtml = cats.length ? '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:1rem">' + cats.map((n) => '<a href="/category/' + esc(n.toLowerCase().replace(/\s+/g, '-')) + '" style="color:#3b82f6;text-decoration:none">' + esc(n) + '</a>').join(' · ') + '</div>' : '';
+      bodyHtml = '<p style="margin-bottom:2rem"><a href="/" style="color:#3b82f6;text-decoration:none">← Back to home</a></p>' + renderPost(post) + catsHtml;
     }
 
     const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: post.excerpt ?? '', markup: '', meta: { title: post.title, description: post.excerpt ?? '', url: new URL(c.req.url).href } });
     const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
     bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-    return c.html(tpl.shell(siteName, headPayload.markup as string, bodyHtml, nav));
+    return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav));
   }
 
   const rows = await getCached(c, 'cms:homepage', 60, async () => {
@@ -697,10 +605,10 @@ app.get('/:slug?', async (c) => {
   const meta = { title: siteName, description: '', url: new URL(c.req.url).href };
   const rssLink = '<link rel="alternate" type="application/rss+xml" title="' + esc(siteName) + '" href="/feed.xml" />';
   const headPayload = await registry.executePipeline('render:head', { siteName, title: siteName, description: '', markup: rssLink, meta });
-  let bodyHtml = rows.length ? tpl.list(rows, siteName) : tpl.home(siteName);
+  let bodyHtml = rows.length ? renderPostList(rows, siteName) : renderHomepage(siteName);
   const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, siteName });
   bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-  return c.html(tpl.shell(siteName, headPayload.markup as string, bodyHtml, nav));
+  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav));
 });
 
 export default app;
@@ -709,42 +617,33 @@ export default app;
 //  Render helpers
 // ══════════════════════════════════════════════════════════════════
 
-function shellFull(siteName: string, headMarkup: string, bodyHtml: string, nav: NavItem[], themeCss: string): string {
-  const navHtml = nav.map((n) => '<a href="' + esc(n.url) + '">' + esc(n.label) + '</a>').join('');
-  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><style>' + themeCss + '</style>' + headMarkup + '</head><body><header><div class="inner"><a href="/" class="site-name">' + esc(siteName) + '</a><nav>' + navHtml + '</nav></div></header><main>' + bodyHtml + '</main><footer><a href="/sitemap.xml">Sitemap</a> · <a href="/feed.xml">RSS</a> · <a href="https://github.com/Stevechaapps/phcloudcms" target="_blank" rel="noopener">GitHub</a><br/><span style="opacity:0.6">Powered by <a href="https://github.com/Stevechaapps/phcloudcms" target="_blank" rel="noopener">PHCloud CMS</a> on <a href="https://www.cloudflare.com/workers/" target="_blank" rel="noopener">Cloudflare Workers</a></span></footer></body></html>';
-}
+const THEME_CSS = '*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#1e293b;line-height:1.6}header{border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto}header a{text-decoration:none}header .site-name{font-weight:700;font-size:1.1rem;color:#0f172a}header nav{display:flex;gap:1.25rem}header nav a{color:#64748b;font-size:0.9rem}header nav a:hover{color:#0f172a}main{max-width:720px;margin:2rem auto;padding:0 1.5rem}footer{text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;max-width:960px;margin:0 auto}';
 
-function autoExcerpt(content: string): string {
-  const plain = content.replace(/^#{1,6}\s+/gm,'').replace(/\*\*?|`|!|\[|\]\(.*?\)/g,'').replace(/^>\s+/gm,'').replace(/^-{3,}/gm,'').replace(/^\s*[-*+]\s/gm,'').trim();
-  const max = 160;
-  if (plain.length <= max) return plain;
-  const cut = plain.substring(0, max).split(' ');
-  cut.pop();
-  return cut.join(' ') + '…';
+function shellFull(siteName: string, headMarkup: string, bodyHtml: string, nav: NavItem[]): string {
+  const navHtml = nav.map((n) => '<a href="' + esc(n.url) + '">' + esc(n.label) + '</a>').join('');
+  const adminLink = '<a href="/admin/login" style="color:#f97316">Admin</a>';
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><style>' + THEME_CSS + '</style>' + headMarkup + '</head><body><header><a href="/" class="site-name">' + esc(siteName) + '</a><nav>' + navHtml + adminLink + '</nav></header><main>' + bodyHtml + '</main><footer>Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
 }
 
 function renderPost(post: { title: string; content: string; updated_at: string }): string {
   const date = new Date(post.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const words = post.content.replace(/^#+\s+/gm,'').replace(/\*\*?|`/g,'').replace(/!?\[.*?\]\(.*?\)/g,'').replace(/>\s+|-{3,}/gm,'').trim().split(/\s+/).length;
-  const minutes = Math.max(1, Math.round(words / 200));
-  const stats = '<div class="post-meta">' + date + ' · ' + words + ' words · ' + minutes + ' min read</div>';
-  return '<h1>' + esc(post.title) + '</h1>' + stats + '<div class="post-content">' + markdownToHtml(post.content) + '</div>';
+  return '<h1>' + esc(post.title) + '</h1><div style="color:#64748b;font-size:0.85rem;margin-bottom:2rem;">' + date + '</div><div style="line-height:1.8;">' + markdownToHtml(post.content) + '</div>';
 }
 
 function renderHomepage(siteName: string): string {
-  return '<div class="site-title"><h1>' + esc(siteName) + '</h1><p>Welcome. Content served from Cloudflare D1.</p><p><a href="/admin/login">Log in</a> to manage your site.</p></div>';
+  return '<h1>' + esc(siteName) + '</h1><p style="color:#64748b;margin-bottom:2rem;">Welcome. Content served from Cloudflare D1.</p><p style="color:#64748b;"><a href="/admin/login">Log in</a> to manage your site.</p>';
 }
 
 function renderPostList(posts: { slug: string; title: string; excerpt: string; updated_at: string }[], siteName: string): string {
   if (!posts.length) return renderHomepage(siteName);
-  let html = '<div class="site-title"><h1>' + esc(siteName) + '</h1></div><div class="post-list">';
+  let html = '<h1 style="margin-bottom:2rem">' + esc(siteName) + '</h1><div style="display:flex;flex-direction:column;gap:1.5rem">';
   for (const p of posts) {
     const date = new Date(p.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    html += '<article class="post-card">';
-    html += '<h2><a href="/' + esc(p.slug) + '">' + esc(p.title) + '</a></h2>';
-    html += '<div class="meta">' + date + '</div>';
-    if (p.excerpt) html += '<p class="excerpt">' + esc(p.excerpt) + '</p>';
-    html += '<a href="/' + esc(p.slug) + '" class="read-more">Read more →</a>';
+    html += '<article style="border-bottom:1px solid #e5e7eb;padding-bottom:1.5rem">';
+    html += '<h2 style="font-size:1.15rem;margin-bottom:0.3rem"><a href="/' + esc(p.slug) + '" style="color:#0f172a;text-decoration:none">' + esc(p.title) + '</a></h2>';
+    html += '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:0.5rem">' + date + '</div>';
+    if (p.excerpt) html += '<p style="color:#64748b;line-height:1.6">' + esc(p.excerpt) + '</p>';
+    html += '<a href="/' + esc(p.slug) + '" style="color:#3b82f6;font-size:0.85rem;text-decoration:none">Read more →</a>';
     html += '</article>';
   }
   html += '</div>';
@@ -762,7 +661,7 @@ function markdownToHtml(md: string): string {
     const safeUrl = url.replace(/^javascript:/i, '').replace(/^data:/i, '');
     return '<a href="' + safeUrl + '" rel="noopener">' + text + '</a>';
   });
-  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+  html = html.replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:0.15rem 0.35rem;border-radius:3px;font-size:0.9em;">$1</code>');
   html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
