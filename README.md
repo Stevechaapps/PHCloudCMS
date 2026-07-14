@@ -392,12 +392,7 @@ registerTheme({
 
 Leave any function out and the default template is used.
 
-### Theme development tips
-
-- Start by copying `src/themes/example.ts` — it's fully annotated
-- Use CSS custom properties for colors so users can easily tweak
-- The public site wrapper is `<header>`, `<main>`, `<footer>` — match that structure for consistent plugin injection
-- Test with `npm run dev` locally before pushing
+For detailed documentation, see [`THEMES.md`](./THEMES.md) — covers every template function, CSS variables, distribution, and full examples (sidebar layout, custom card design, shell override).
 
 ---
 
