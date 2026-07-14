@@ -11,7 +11,8 @@ header nav{display:flex;gap:1.5rem;align-items:center}
 header nav a{color:var(--text-light);font-size:0.9rem;transition:color 0.15s}
 header nav a:hover{color:var(--accent)}
 main{max-width:680px;margin:3rem auto;padding:0 1.5rem;min-height:60vh}
-footer{text-align:center;padding:2.5rem 1.5rem;color:var(--text-muted);font-size:0.8rem;border-top:1px solid var(--border);margin-top:4rem}
+footer{text-align:center;padding:2.5rem 1.5rem;color:var(--text-muted);font-size:0.8rem;border-top:1px solid var(--border);margin-top:4rem;line-height:2}
+footer a{color:var(--text-muted)}footer a:hover{color:var(--accent)}
 h1{font-size:2rem;font-weight:800;letter-spacing:-0.02em;line-height:1.3;margin-bottom:1.5rem}
 h2{font-size:1.4rem;font-weight:700;margin-bottom:1rem}
 h3{font-size:1.1rem;font-weight:600;margin-bottom:0.75rem}
