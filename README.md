@@ -241,6 +241,27 @@ Your post appears on the homepage immediately.
 
 ---
 
+## Adding Images to Posts
+
+PHCloud has **no built-in image storage** — images are hosted externally via Imgur (free, no account required for site visitors).
+
+### One-time Setup
+
+1. Go to [api.imgur.com/oauth2/addclient](https://api.imgur.com/oauth2/addclient)
+2. Fill in any name (e.g. "PHCloud CMS")
+3. **Authorization type**: select **OAuth 2 without a callback URL**
+4. Leave the callback/website fields blank
+5. Submit — you get a **Client ID** (a 15-character hex string)
+6. In your admin panel, go to **Settings** → paste the Client ID → **Save Settings**
+
+### Usage
+
+In the post/page editor, **paste an image** (Ctrl+V) directly into the content textarea. The image uploads to Imgur in the background and the Markdown `![](https://i.imgur.com/xxx.png)` is inserted at your cursor position.
+
+> **How it works**: The upload goes browser → Imgur directly. Your Worker never touches the image bytes — zero server bandwidth, zero storage cost.
+
+---
+
 ## Local Development
 
 ```bash
@@ -274,7 +295,8 @@ npx tsc --noEmit
 | **Onboarding Wizard** | Browser-based first-run setup |
 | **SEO Built-in** | Meta tags, Open Graph, Twitter Cards |
 | **XML Sitemap** | Auto-generated `/sitemap.xml` |
-| **Markdown Editor** | Write in Markdown with live preview |
+| **Markdown Editor** | Write in Markdown with paste-to-upload image support |
+| **Image Upload** | Paste images → auto-uploaded to Imgur → Markdown inserted at cursor |
 | **Session Auth** | PBKDF2 hashing, HTTP-only cookies, KV sessions |
 | **KV Caching** | Config + posts cached for speed |
 | **Free Hosting** | Cloudflare free tier |
