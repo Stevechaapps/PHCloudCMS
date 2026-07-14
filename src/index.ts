@@ -29,15 +29,6 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', onboardingGuard);
 
-// ── Migrate (temporary) ──────────────────────────────────────────
-
-app.get('/api/migrate', async (c) => {
-  await migrate(c.env.DB);
-  await c.env.CACHE.delete('cms:config');
-  await c.env.CACHE.delete('cms:posts:pub');
-  return c.json({ ok: true, message: 'Migration complete' });
-});
-
 // ── Auth ──────────────────────────────────────────────────────────
 
 app.post('/api/auth/login', async (c) => {
