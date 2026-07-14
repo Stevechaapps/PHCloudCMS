@@ -439,10 +439,9 @@ app.get('/search', async (c) => {
     const rows = await db.prepare(
       "SELECT slug, title, excerpt, updated_at FROM posts WHERE published = 1 AND type = 'post' AND (title LIKE ? OR content LIKE ?) ORDER BY updated_at DESC"
     ).bind('%' + q + '%', '%' + q + '%').all<{ slug: string; title: string; excerpt: string; updated_at: string }>();
+    bodyHtml += '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem">' + rows.results.length + ' result' + (rows.results.length !== 1 ? 's' : '') + ' found for "' + esc(q) + '"</p>';
     if (rows.results.length) {
       bodyHtml += renderPostList(rows.results, '');
-    } else {
-      bodyHtml += '<p style="color:var(--text-light)">No results found for "' + esc(q) + '"</p>';
     }
   }
 
@@ -691,7 +690,10 @@ function autoExcerpt(content: string): string {
 
 function renderPost(post: { title: string; content: string; updated_at: string }): string {
   const date = new Date(post.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  return '<h1>' + esc(post.title) + '</h1><div class="post-meta">' + date + '</div><div class="post-content">' + markdownToHtml(post.content) + '</div>';
+  const words = post.content.replace(/^#+\s+/gm,'').replace(/\*\*?|`/g,'').replace(/!?\[.*?\]\(.*?\)/g,'').replace(/>\s+|-{3,}/gm,'').trim().split(/\s+/).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  const stats = '<div class="post-meta">' + date + ' · ' + words + ' words · ' + minutes + ' min read</div>';
+  return '<h1>' + esc(post.title) + '</h1>' + stats + '<div class="post-content">' + markdownToHtml(post.content) + '</div>';
 }
 
 function renderHomepage(siteName: string): string {
