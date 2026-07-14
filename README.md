@@ -337,6 +337,70 @@ See [`PLUGIN_DEV.md`](./PLUGIN_DEV.md) and [`PLUGIN_STARTER.md`](./PLUGIN_STARTE
 
 ---
 
+## Themes
+
+PHCloud supports custom themes. A theme controls the look of your public site — colors, fonts, layout, navigation placement, card design, footer, everything.
+
+### Built-in themes
+
+| Theme | Description |
+|-------|-------------|
+| **Default** | Clean blog theme, orange accent, card-based post list, responsive |
+
+Select a theme in **Admin → Settings → Public Site Theme**.
+
+### Creating a theme
+
+Themes follow the same fork-based workflow as plugins:
+
+```
+Developer → Creates theme → Adds to fork → Commits → Publishes on GitHub
+```
+
+**Quick start:**
+
+1. Copy `src/themes/example.ts` to `src/themes/my-theme.ts`
+2. Edit the CSS and template functions in your new file
+3. Add `import './my-theme.js';` to `src/themes/index.ts`
+4. Commit and push — Workers Builds deploys automatically
+5. Select it in **Admin → Settings → Public Site Theme**
+
+### Anatomy of a theme
+
+Each theme file exports a call to `registerTheme()` with:
+
+```typescript
+registerTheme({
+  id: 'my-theme',           // unique, no spaces
+  name: 'My Theme',         // display name in admin
+  author: 'Your Name',
+  description: 'What it does',
+  version: '1.0.0',
+  css: `:root { --accent: #3b82f6; }`,   // required
+  shell: myShell,           // optional — full page HTML
+  renderPost: myPostView,   // optional — single post
+  renderPostList: myList,   // optional — homepage listing
+  renderHomepage: myHome,   // optional — empty site
+});
+```
+
+- **`css`** — injected in `<style>` before all content. Use CSS variables for easy overrides.
+- **`shell`** — the entire page wrapper: `<!DOCTYPE html>...`. Override to change layout, nav position, footer.
+- **`renderPost`** — wraps a single post's `<h1>` title and `.post-content` body.
+- **`renderPostList`** — wraps the homepage post listing (called with the posts array).
+- **`renderHomepage`** — shown when there are no published posts.
+
+Leave any function out and the default template is used.
+
+### Theme development tips
+
+- Start by copying `src/themes/example.ts` — it's fully annotated
+- Use CSS custom properties for colors so users can easily tweak
+- The public site wrapper is `<header>`, `<main>`, `<footer>` — match that structure for consistent plugin injection
+- Test with `npm run dev` locally before pushing
+
+---
+
 ## FAQ / Troubleshooting
 
 ### "I see a setup screen again and 'Cannot read properties of undefined (reading batch)'"
