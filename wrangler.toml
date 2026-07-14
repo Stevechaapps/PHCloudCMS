@@ -9,11 +9,11 @@ workers_dev = true
 [[d1_databases]]
 binding = "DB"
 database_name = "phcloud-db"
-database_id = "<YOUR_D1_DATABASE_ID>"
+database_id = "a2823457-ab83-40fd-8b29-0e5054caa728"
 
 # ── KV Namespace ────────────────────────────────────────────────────
 # Replace <YOUR_KV_NAMESPACE_ID> with your actual KV namespace ID.
 # Get it from: Cloudflare Dashboard → Workers KV → click your namespace → copy the ID.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "<YOUR_KV_NAMESPACE_ID>"
+id = "2d0d517b10eb4e66bdacfebd108e3898"
