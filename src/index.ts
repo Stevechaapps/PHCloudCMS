@@ -413,7 +413,7 @@ app.get('/search', async (c) => {
   });
 
   let bodyHtml = '<h1>Search</h1>';
-  bodyHtml += '<form action="/search" method="get" style="margin-bottom:2rem"><input type="text" name="q" value="' + esc(q) + '" placeholder="Search posts…" style="width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem"/></form>';
+  bodyHtml += '<form action="/search" method="get" class="search-form"><input type="text" name="q" value="' + esc(q) + '" placeholder="Search posts…" /></form>';
 
   if (q) {
     const rows = await db.prepare(
@@ -422,7 +422,7 @@ app.get('/search', async (c) => {
     if (rows.results.length) {
       bodyHtml += renderPostList(rows.results, '');
     } else {
-      bodyHtml += '<p style="color:#64748b">No results found for "' + esc(q) + '"</p>';
+      bodyHtml += '<p style="color:var(--text-light)">No results found for "' + esc(q) + '"</p>';
     }
   }
 
@@ -448,7 +448,7 @@ app.get('/category/:slug', async (c) => {
   const siteName = await getCached(c, 'cms:config', 600, async () => {
     return await getSetting(db, 'site_name') ?? 'My Site';
   });
-  const bodyHtml = '<h1 style="margin-bottom:1rem">' + esc(cat.name) + '</h1>' + (rows.results.length ? renderPostList(rows.results, '') : '<p style="color:#64748b">No posts in this category.</p>');
+  const bodyHtml = '<h1>' + esc(cat.name) + '</h1>' + (rows.results.length ? renderPostList(rows.results, '') : '<p style="color:var(--text-light)">No posts in this category.</p>');
   const registry = new CMSRegistry();
   const themeId = await getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default');
   const themeCss = (getTheme(themeId)?.css) ?? getTheme('default')!.css;
@@ -589,18 +589,18 @@ app.get('/:slug?', async (c) => {
     const post = await db.prepare(
       "SELECT slug, title, content, excerpt, updated_at, type FROM posts WHERE slug = ? AND published = 1"
     ).bind(slug).first<{ slug: string; title: string; content: string; excerpt: string; updated_at: string; type: string }>();
-    if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/">Go home</a></p>', 404);
+    if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/" class="back-link">Go home</a></p>', 404);
 
     let bodyHtml: string;
     if (post.type === 'page') {
-      bodyHtml = '<h1>' + esc(post.title) + '</h1><div style="line-height:1.8">' + markdownToHtml(post.content) + '</div>';
+      bodyHtml = '<h1>' + esc(post.title) + '</h1><div class="post-content">' + markdownToHtml(post.content) + '</div>';
     } else {
       const catRows = await db.prepare(
         "SELECT c.name FROM categories c JOIN post_categories pc ON c.id = pc.category_id WHERE pc.post_id = (SELECT id FROM posts WHERE slug = ?)"
       ).bind(slug).all<{ name: string }>();
       const cats = catRows.results.map((c) => c.name);
-      const catsHtml = cats.length ? '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:1rem">' + cats.map((n) => '<a href="/category/' + esc(n.toLowerCase().replace(/\s+/g, '-')) + '" style="color:#3b82f6;text-decoration:none">' + esc(n) + '</a>').join(' · ') + '</div>' : '';
-      bodyHtml = '<p style="margin-bottom:2rem"><a href="/" style="color:#3b82f6;text-decoration:none">← Back to home</a></p>' + renderPost(post) + catsHtml;
+      const catsHtml = cats.length ? '<div class="post-meta">' + cats.map((n) => '<a href="/category/' + esc(n.toLowerCase().replace(/\s+/g, '-')) + '" class="category-pill">' + esc(n) + '</a>').join('') + '</div>' : '';
+      bodyHtml = '<a href="/" class="back-link">← Back to home</a>' + renderPost(post) + catsHtml;
     }
 
     const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: post.excerpt ?? '', markup: '', meta: { title: post.title, description: post.excerpt ?? '', url: new URL(c.req.url).href } });
@@ -639,23 +639,23 @@ function shellFull(siteName: string, headMarkup: string, bodyHtml: string, nav: 
 
 function renderPost(post: { title: string; content: string; updated_at: string }): string {
   const date = new Date(post.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  return '<h1>' + esc(post.title) + '</h1><div style="color:#64748b;font-size:0.85rem;margin-bottom:2rem;">' + date + '</div><div style="line-height:1.8;">' + markdownToHtml(post.content) + '</div>';
+  return '<h1>' + esc(post.title) + '</h1><div class="post-meta">' + date + '</div><div class="post-content">' + markdownToHtml(post.content) + '</div>';
 }
 
 function renderHomepage(siteName: string): string {
-  return '<h1>' + esc(siteName) + '</h1><p style="color:#64748b;margin-bottom:2rem;">Welcome. Content served from Cloudflare D1.</p><p style="color:#64748b;"><a href="/admin/login">Log in</a> to manage your site.</p>';
+  return '<div class="site-title"><h1>' + esc(siteName) + '</h1><p>Welcome. Content served from Cloudflare D1.</p><p><a href="/admin/login">Log in</a> to manage your site.</p></div>';
 }
 
 function renderPostList(posts: { slug: string; title: string; excerpt: string; updated_at: string }[], siteName: string): string {
   if (!posts.length) return renderHomepage(siteName);
-  let html = '<h1 style="margin-bottom:2rem">' + esc(siteName) + '</h1><div style="display:flex;flex-direction:column;gap:1.5rem">';
+  let html = '<div class="site-title"><h1>' + esc(siteName) + '</h1></div><div class="post-list">';
   for (const p of posts) {
     const date = new Date(p.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    html += '<article style="border-bottom:1px solid #e5e7eb;padding-bottom:1.5rem">';
-    html += '<h2 style="font-size:1.15rem;margin-bottom:0.3rem"><a href="/' + esc(p.slug) + '" style="color:#0f172a;text-decoration:none">' + esc(p.title) + '</a></h2>';
-    html += '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:0.5rem">' + date + '</div>';
-    if (p.excerpt) html += '<p style="color:#64748b;line-height:1.6">' + esc(p.excerpt) + '</p>';
-    html += '<a href="/' + esc(p.slug) + '" style="color:#3b82f6;font-size:0.85rem;text-decoration:none">Read more →</a>';
+    html += '<article class="post-card">';
+    html += '<h2><a href="/' + esc(p.slug) + '">' + esc(p.title) + '</a></h2>';
+    html += '<div class="meta">' + date + '</div>';
+    if (p.excerpt) html += '<p class="excerpt">' + esc(p.excerpt) + '</p>';
+    html += '<a href="/' + esc(p.slug) + '" class="read-more">Read more →</a>';
     html += '</article>';
   }
   html += '</div>';
@@ -673,7 +673,7 @@ function markdownToHtml(md: string): string {
     const safeUrl = url.replace(/^javascript:/i, '').replace(/^data:/i, '');
     return '<a href="' + safeUrl + '" rel="noopener">' + text + '</a>';
   });
-  html = html.replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:0.15rem 0.35rem;border-radius:3px;font-size:0.9em;">$1</code>');
+  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
   html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
