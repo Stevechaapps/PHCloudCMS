@@ -319,28 +319,28 @@ app.get('/:slug?', async (c) => {
 
   if (slug) {
     const post = await db.prepare(
-      "SELECT title, content, updated_at FROM posts WHERE slug = ? AND published = 1"
-    ).bind(slug).first<{ title: string; content: string; updated_at: string }>();
+      "SELECT slug, title, content, excerpt, updated_at FROM posts WHERE slug = ? AND published = 1"
+    ).bind(slug).first<{ slug: string; title: string; content: string; excerpt: string; updated_at: string }>();
     if (!post) return c.html('<h1>404 — Not found</h1><p><a href="/">Go home</a></p>', 404);
-    const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: '', markup: '', meta: { title: post.title, description: '', url: new URL(c.req.url).href } });
-    let bodyHtml = renderPost(post);
+    const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: post.excerpt ?? '', markup: '', meta: { title: post.title, description: post.excerpt ?? '', url: new URL(c.req.url).href } });
+    let bodyHtml = '<p style="margin-bottom:2rem"><a href="/" style="color:#3b82f6;text-decoration:none">← Back to home</a></p>' + renderPost(post);
     const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
     bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
     const fullHtml = shell(siteName, headPayload.markup as string, bodyHtml);
     return c.html(fullHtml);
   }
 
-  const post = await getCached(c, 'cms:homepage', 60, async () => {
-    return await db.prepare(
-      "SELECT title, content, updated_at FROM posts WHERE published = 1 ORDER BY updated_at DESC LIMIT 1"
-    ).first<{ title: string; content: string; updated_at: string }>();
+  const rows = await getCached(c, 'cms:homepage', 60, async () => {
+    const r = await db.prepare(
+      "SELECT slug, title, excerpt, updated_at FROM posts WHERE published = 1 ORDER BY updated_at DESC"
+    ).all<{ slug: string; title: string; excerpt: string; updated_at: string }>();
+    return r.results;
   });
 
-  const title = post?.title ?? siteName;
-  const meta = { title, description: '', url: new URL(c.req.url).href };
-  const headPayload = await registry.executePipeline('render:head', { siteName, title, description: '', markup: '', meta });
-  let bodyHtml = post ? renderPost(post) : renderHomepage(siteName);
-  const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
+  const meta = { title: siteName, description: '', url: new URL(c.req.url).href };
+  const headPayload = await registry.executePipeline('render:head', { siteName, title: siteName, description: '', markup: '', meta });
+  let bodyHtml = rows.length ? renderPostList(rows, siteName) : renderHomepage(siteName);
+  const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, siteName });
   bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
   const fullHtml = shell(siteName, headPayload.markup as string, bodyHtml);
   return c.html(fullHtml);
@@ -353,7 +353,7 @@ export default app;
 // ══════════════════════════════════════════════════════════════════
 
 function shell(siteName: string, headMarkup: string, bodyHtml: string): string {
-  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />' + headMarkup + '</head><body><header style="border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;"><a href="/" style="font-weight:700;font-size:1.1rem;color:#0f172a;text-decoration:none;">' + esc(siteName) + '</a></header><main style="max-width:720px;margin:2rem auto;padding:0 1.5rem;">' + bodyHtml + '</main><footer style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;">Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />' + headMarkup + '</head><body><header style="border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between"><a href="/" style="font-weight:700;font-size:1.1rem;color:#0f172a;text-decoration:none;">' + esc(siteName) + '</a><nav style="display:flex;gap:1rem"><a href="/" style="color:#64748b;text-decoration:none;font-size:0.9rem">Home</a><a href="/admin/login" style="color:#64748b;text-decoration:none;font-size:0.9rem">Admin</a></nav></header><main style="max-width:720px;margin:2rem auto;padding:0 1.5rem;">' + bodyHtml + '</main><footer style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;">Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
 }
 
 function renderPost(post: { title: string; content: string; updated_at: string }): string {
@@ -363,6 +363,22 @@ function renderPost(post: { title: string; content: string; updated_at: string }
 
 function renderHomepage(siteName: string): string {
   return '<h1>' + esc(siteName) + '</h1><p style="color:#64748b;margin-bottom:2rem;">Welcome. Content served from Cloudflare D1.</p><p style="color:#64748b;"><a href="/admin/login">Log in</a> to manage your site.</p>';
+}
+
+function renderPostList(posts: { slug: string; title: string; excerpt: string; updated_at: string }[], siteName: string): string {
+  if (!posts.length) return renderHomepage(siteName);
+  let html = '<h1 style="margin-bottom:2rem">' + esc(siteName) + '</h1><div style="display:flex;flex-direction:column;gap:1.5rem">';
+  for (const p of posts) {
+    const date = new Date(p.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    html += '<article style="border-bottom:1px solid #e5e7eb;padding-bottom:1.5rem">';
+    html += '<h2 style="font-size:1.15rem;margin-bottom:0.3rem"><a href="/' + esc(p.slug) + '" style="color:#0f172a;text-decoration:none">' + esc(p.title) + '</a></h2>';
+    html += '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:0.5rem">' + date + '</div>';
+    if (p.excerpt) html += '<p style="color:#64748b;line-height:1.6">' + esc(p.excerpt) + '</p>';
+    html += '<a href="/' + esc(p.slug) + '" style="color:#3b82f6;font-size:0.85rem;text-decoration:none">Read more →</a>';
+    html += '</article>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function markdownToHtml(md: string): string {
