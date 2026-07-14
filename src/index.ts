@@ -9,6 +9,7 @@ import { initSEOPlugin } from './plugins/seo.js';
 import { initSitemapPlugin } from './plugins/sitemap.js';
 import './themes/index.js';
 import { getTheme, getAllThemes } from './cms/theme.js';
+import type { PostView, PostListItem } from './cms/theme.js';
 import { getCookie, setCookie } from 'hono/cookie';
 import { adminShell, dashboardBody, postsBody, newPostBody, editBody, loginForm, pluginsBody, pagesBody, newPageBody, editPageBody, categoriesBody, navBody, settingsBody } from './admin.js';
 
@@ -581,7 +582,15 @@ app.get('/:slug?', async (c) => {
   ]);
 
   const nav: NavItem[] = JSON.parse(navVal);
-  const themeCss = getTheme(themeId)?.css ?? getTheme('default')!.css;
+  const activeTheme = getTheme(themeId) ?? getTheme('default')!;
+  const themeCss = activeTheme.css;
+
+  const tpl = {
+    shell: (sn: string, h: string, b: string, n: NavItem[]) => activeTheme.shell?.(sn, h, b, n) ?? shellFull(sn, h, b, n, themeCss),
+    post: (p: PostView) => activeTheme.renderPost?.(p) ?? renderPost(p),
+    list: (posts: PostListItem[], sn: string) => activeTheme.renderPostList?.(posts, sn) ?? renderPostList(posts, sn),
+    home: (sn: string) => activeTheme.renderHomepage?.(sn) ?? renderHomepage(sn),
+  };
 
   initActivePlugins(registry, plugins);
 
@@ -600,13 +609,13 @@ app.get('/:slug?', async (c) => {
       ).bind(slug).all<{ name: string }>();
       const cats = catRows.results.map((c) => c.name);
       const catsHtml = cats.length ? '<div class="post-meta">' + cats.map((n) => '<a href="/category/' + esc(n.toLowerCase().replace(/\s+/g, '-')) + '" class="category-pill">' + esc(n) + '</a>').join('') + '</div>' : '';
-      bodyHtml = '<a href="/" class="back-link">← Back to home</a>' + renderPost(post) + catsHtml;
+      bodyHtml = '<a href="/" class="back-link">← Back to home</a>' + tpl.post(post) + catsHtml;
     }
 
     const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: post.excerpt ?? '', markup: '', meta: { title: post.title, description: post.excerpt ?? '', url: new URL(c.req.url).href } });
     const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
     bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-    return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav, themeCss));
+    return c.html(tpl.shell(siteName, headPayload.markup as string, bodyHtml, nav));
   }
 
   const rows = await getCached(c, 'cms:homepage', 60, async () => {
@@ -619,10 +628,10 @@ app.get('/:slug?', async (c) => {
   const meta = { title: siteName, description: '', url: new URL(c.req.url).href };
   const rssLink = '<link rel="alternate" type="application/rss+xml" title="' + esc(siteName) + '" href="/feed.xml" />';
   const headPayload = await registry.executePipeline('render:head', { siteName, title: siteName, description: '', markup: rssLink, meta });
-  let bodyHtml = rows.length ? renderPostList(rows, siteName) : renderHomepage(siteName);
+  let bodyHtml = rows.length ? tpl.list(rows, siteName) : tpl.home(siteName);
   const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, siteName });
   bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav, themeCss));
+  return c.html(tpl.shell(siteName, headPayload.markup as string, bodyHtml, nav));
 });
 
 export default app;

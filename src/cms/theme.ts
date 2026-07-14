@@ -1,3 +1,23 @@
+export interface ThemeRenderContext {
+  siteName: string;
+  nav: { label: string; url: string }[];
+}
+
+export interface PostView {
+  title: string;
+  content: string;
+  slug?: string;
+  excerpt?: string;
+  updated_at: string;
+}
+
+export interface PostListItem {
+  slug: string;
+  title: string;
+  excerpt: string;
+  updated_at: string;
+}
+
 export interface Theme {
   id: string;
   name: string;
@@ -5,6 +25,10 @@ export interface Theme {
   description: string;
   version: string;
   css: string;
+  shell?: (siteName: string, headMarkup: string, bodyHtml: string, nav: { label: string; url: string }[]) => string;
+  renderPost?: (post: PostView) => string;
+  renderPostList?: (posts: PostListItem[], siteName: string) => string;
+  renderHomepage?: (siteName: string) => string;
 }
 
 const registry = new Map<string, Theme>();

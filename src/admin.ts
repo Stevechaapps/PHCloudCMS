@@ -704,7 +704,7 @@ return `<h2 style="margin-bottom:1.5rem">Settings</h2>
 <div class="form-group">
 <label for="theme">Public Site Theme</label>
 <select id="theme" name="theme" style="width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem;font-family:inherit;background:white">${themeOpts}</select>
-<p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Create your own theme by adding a <code>.ts</code> file to <code>src/themes/</code> and registering it in <code>src/themes/index.ts</code>.</p>
+<p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Create your own theme — copy <code>src/themes/example.ts</code>, customize CSS + layout, then add to <code>src/themes/index.ts</code>. See the repo for documentation.</p>
 </div>
 <button type="submit" class="btn btn-primary">Save Settings</button>
 <div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
