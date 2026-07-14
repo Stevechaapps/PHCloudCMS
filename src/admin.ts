@@ -273,6 +273,29 @@ status.style.color='#16a34a';
 status.textContent='Saved! Redirecting…';
 setTimeout(function(){location.href='/admin/edit/'+p.id},500)})}
  else{status.style.color='#dc2626';status.textContent='Error saving post'}})});
+(function draftSave(){
+var KEY='draft:new';
+var saved=localStorage.getItem(KEY);
+if(saved){var el=document.createElement('div');el.style.cssText='background:#dbeafe;color:#1e40af;padding:0.6rem 0.75rem;border-radius:5px;margin-bottom:1rem;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center';el.innerHTML='<span>Unsaved draft found. Restore?</span><div><button class="btn btn-sm" style="margin-right:0.4rem" onclick="restoreDraft()">Restore</button><button class="btn btn-sm" onclick="clearDraft()">Discard</button></div>';document.querySelector('form').insertBefore(el,document.querySelector('form').firstChild)}
+window.restoreDraft=function(){
+var d=JSON.parse(localStorage.getItem(KEY));
+document.getElementById('title').value=d.title||'';document.getElementById('slug').value=d.slug||'';
+document.getElementById('content').value=d.content||'';document.getElementById('excerpt').value=d.excerpt||'';
+document.getElementById('published').checked=d.published||false;
+var sched=d.publish_at;if(sched){document.getElementById('schedule').checked=true;document.getElementById('publish_at').value=sched;document.getElementById('publish_at').style.display='block';document.getElementById('published').checked=false}
+clearDraft()};
+window.clearDraft=function(){localStorage.removeItem(KEY);location.reload()};
+setInterval(function(){
+if(!document.getElementById('content').value)return;
+localStorage.setItem(KEY,JSON.stringify({
+title:document.getElementById('title').value,
+slug:document.getElementById('slug').value,
+content:document.getElementById('content').value,
+excerpt:document.getElementById('excerpt').value,
+published:document.getElementById('published').checked,
+publish_at:document.getElementById('publish_at').value||null
+}))},5000)
+})();
 </script>
 <script>
 (function(){var cli='';fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){cli=s.imgur_client_id});var ta=document.getElementById('content');ta.addEventListener('paste',function(e){if(!cli)return;var fl=e.clipboardData.files;if(!fl.length)return;e.preventDefault();var t=this;var status=document.getElementById('status');status.style.color='#2563eb';status.textContent='Uploading image to Imgur…';var fd=new FormData();fd.append('image',fl[0]);fetch('https://api.imgur.com/3/image',{method:'POST',headers:{'Authorization':'Client-ID '+cli},body:fd}).then(function(r){return r.json()}).then(function(r){if(r.success){var u=r.data.link;var m='![]('+u+')';var st=t.selectionStart,en=t.selectionEnd;var v=t.value;t.value=v.substring(0,st)+m+v.substring(en);t.selectionStart=t.selectionEnd=st+m.length;t.focus();status.style.color='#16a34a';status.textContent='Image uploaded: '+u}else{status.style.color='#dc2626';status.textContent='Imgur upload failed'}}).catch(function(){status.style.color='#dc2626';status.textContent='Imgur upload error'})})})();
@@ -388,6 +411,29 @@ category_ids:getCatIds()
 })}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Updated!'}
 else{status.style.color='#dc2626';status.textContent='Error updating post'}})});
+(function draftSave(){
+var KEY='draft:'+'${id}';
+var saved=localStorage.getItem(KEY);
+if(saved){var el=document.createElement('div');el.style.cssText='background:#dbeafe;color:#1e40af;padding:0.6rem 0.75rem;border-radius:5px;margin-bottom:1rem;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center';el.innerHTML='<span>Unsaved draft found. Restore?</span><div><button class="btn btn-sm" style="margin-right:0.4rem" onclick="restoreDraft()">Restore</button><button class="btn btn-sm" onclick="clearDraft()">Discard</button></div>';document.querySelector('form').insertBefore(el,document.querySelector('form').firstChild)}
+window.restoreDraft=function(){
+var d=JSON.parse(localStorage.getItem(KEY));
+document.getElementById('title').value=d.title||'';document.getElementById('slug').value=d.slug||'';
+document.getElementById('content').value=d.content||'';document.getElementById('excerpt').value=d.excerpt||'';
+document.getElementById('published').checked=d.published||false;
+var sched=d.publish_at;if(sched){document.getElementById('schedule').checked=true;document.getElementById('publish_at').value=sched;document.getElementById('publish_at').style.display='block';document.getElementById('published').checked=false}
+clearDraft()};
+window.clearDraft=function(){localStorage.removeItem(KEY);location.reload()};
+setInterval(function(){
+if(!document.getElementById('content').value)return;
+localStorage.setItem(KEY,JSON.stringify({
+title:document.getElementById('title').value,
+slug:document.getElementById('slug').value,
+content:document.getElementById('content').value,
+excerpt:document.getElementById('excerpt').value,
+published:document.getElementById('published').checked,
+publish_at:document.getElementById('publish_at').value||null
+}))},5000)
+})();
 </script>
 <script>
 (function(){var cli='';fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){cli=s.imgur_client_id});var ta=document.getElementById('content');ta.addEventListener('paste',function(e){if(!cli)return;var fl=e.clipboardData.files;if(!fl.length)return;e.preventDefault();var t=this;var status=document.getElementById('status');status.style.color='#2563eb';status.textContent='Uploading image to Imgur…';var fd=new FormData();fd.append('image',fl[0]);fetch('https://api.imgur.com/3/image',{method:'POST',headers:{'Authorization':'Client-ID '+cli},body:fd}).then(function(r){return r.json()}).then(function(r){if(r.success){var u=r.data.link;var m='![]('+u+')';var st=t.selectionStart,en=t.selectionEnd;var v=t.value;t.value=v.substring(0,st)+m+v.substring(en);t.selectionStart=t.selectionEnd=st+m.length;t.focus();status.style.color='#16a34a';status.textContent='Image uploaded: '+u}else{status.style.color='#dc2626';status.textContent='Imgur upload failed'}}).catch(function(){status.style.color='#dc2626';status.textContent='Imgur upload error'})})})();
