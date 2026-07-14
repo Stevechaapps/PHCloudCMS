@@ -7,6 +7,8 @@ import { hashPassword, verifyPassword } from './cms/auth.js';
 import { AVAILABLE_PLUGINS } from './plugins/index.js';
 import { initSEOPlugin } from './plugins/seo.js';
 import { initSitemapPlugin } from './plugins/sitemap.js';
+import './themes/index.js';
+import { getTheme, getAllThemes } from './cms/theme.js';
 import { getCookie, setCookie } from 'hono/cookie';
 import { adminShell, dashboardBody, postsBody, newPostBody, editBody, loginForm, pluginsBody, pagesBody, newPageBody, editPageBody, categoriesBody, navBody, settingsBody } from './admin.js';
 
@@ -313,8 +315,10 @@ app.get('/admin/nav', async (c) => {
 app.get('/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const imgurClientId = await getSetting(c.env.DB, 'imgur_client_id') ?? '';
-  return c.html(adminShell('Settings', settingsBody({ imgur_client_id: imgurClientId })));
+  const imgurClientId = (await getSetting(c.env.DB, 'imgur_client_id')) ?? '';
+  const themeId = (await getSetting(c.env.DB, 'theme')) ?? 'default';
+  const available = getAllThemes().map((t) => ({ id: t.id, name: t.name }));
+  return c.html(adminShell('Settings', settingsBody({ imgur_client_id: imgurClientId, theme: themeId, available_themes: available })));
 });
 
 app.get('/admin/login', (c) => {
@@ -334,8 +338,12 @@ app.get('/api/admin/settings', async (c) => {
 app.post('/api/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const body = await c.req.json<{ imgur_client_id?: string }>();
+  const body = await c.req.json<{ imgur_client_id?: string; theme?: string }>();
   await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('imgur_client_id', ?)").bind(body.imgur_client_id ?? '').run();
+  if (body.theme) {
+    await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('theme', ?)").bind(body.theme).run();
+    await c.env.CACHE.delete('cms:theme');
+  }
   await c.env.CACHE.delete('cms:config');
   return c.json({ ok: true });
 });
@@ -419,8 +427,10 @@ app.get('/search', async (c) => {
   }
 
   const registry = new CMSRegistry();
+  const themeId = await getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default');
+  const themeCss = (getTheme(themeId)?.css) ?? getTheme('default')!.css;
   const headPayload = await registry.executePipeline('render:head', { siteName, title: 'Search · ' + siteName, description: '', markup: '', meta: { title: 'Search · ' + siteName, description: '', url: new URL(c.req.url).href } });
-  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, []));
+  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, [], themeCss));
 });
 
 // ── Category pages ─────────────────────────────────────────────────
@@ -440,8 +450,10 @@ app.get('/category/:slug', async (c) => {
   });
   const bodyHtml = '<h1 style="margin-bottom:1rem">' + esc(cat.name) + '</h1>' + (rows.results.length ? renderPostList(rows.results, '') : '<p style="color:#64748b">No posts in this category.</p>');
   const registry = new CMSRegistry();
+  const themeId = await getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default');
+  const themeCss = (getTheme(themeId)?.css) ?? getTheme('default')!.css;
   const headPayload = await registry.executePipeline('render:head', { siteName, title: cat.name + ' · ' + siteName, description: '', markup: '', meta: { title: cat.name + ' · ' + siteName, description: '', url: new URL(c.req.url).href } });
-  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, []));
+  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, [], themeCss));
 });
 
 // ── Admin: Categories API ──────────────────────────────────────────
@@ -558,16 +570,18 @@ app.get('/:slug?', async (c) => {
   const db = c.env.DB;
   const slug = c.req.param('slug') ?? '';
 
-  const [siteName, navVal, plugins] = await Promise.all([
+  const [siteName, navVal, plugins, themeId] = await Promise.all([
     getCached(c, 'cms:config', 600, async () => await getSetting(db, 'site_name') ?? 'My Site') as Promise<string>,
     getCached(c, 'cms:nav', 600, async () => await getSetting(db, 'nav') ?? '[]') as Promise<string>,
     getCached(c, 'cms:plugins', 300, async () => {
       const rows = await db.prepare("SELECT id, active FROM plugins").all<{ id: string; active: number }>();
       return Object.fromEntries(rows.results.map((p) => [p.id, p.active === 1]));
     }) as Promise<Record<string, boolean>>,
+    getCached(c, 'cms:theme', 600, async () => await getSetting(db, 'theme') ?? 'default') as Promise<string>,
   ]);
 
   const nav: NavItem[] = JSON.parse(navVal);
+  const themeCss = getTheme(themeId)?.css ?? getTheme('default')!.css;
 
   initActivePlugins(registry, plugins);
 
@@ -592,7 +606,7 @@ app.get('/:slug?', async (c) => {
     const headPayload = await registry.executePipeline('render:head', { siteName, title: post.title, description: post.excerpt ?? '', markup: '', meta: { title: post.title, description: post.excerpt ?? '', url: new URL(c.req.url).href } });
     const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, post, siteName });
     bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-    return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav));
+    return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav, themeCss));
   }
 
   const rows = await getCached(c, 'cms:homepage', 60, async () => {
@@ -608,7 +622,7 @@ app.get('/:slug?', async (c) => {
   let bodyHtml = rows.length ? renderPostList(rows, siteName) : renderHomepage(siteName);
   const bodyPayload = await registry.executePipeline('render:body', { bodyHtml, siteName });
   bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
-  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav));
+  return c.html(shellFull(siteName, headPayload.markup as string, bodyHtml, nav, themeCss));
 });
 
 export default app;
@@ -617,12 +631,10 @@ export default app;
 //  Render helpers
 // ══════════════════════════════════════════════════════════════════
 
-const THEME_CSS = '*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#1e293b;line-height:1.6}header{border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto}header a{text-decoration:none}header .site-name{font-weight:700;font-size:1.1rem;color:#0f172a}header nav{display:flex;gap:1.25rem}header nav a{color:#64748b;font-size:0.9rem}header nav a:hover{color:#0f172a}main{max-width:720px;margin:2rem auto;padding:0 1.5rem}footer{text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;max-width:960px;margin:0 auto}';
-
-function shellFull(siteName: string, headMarkup: string, bodyHtml: string, nav: NavItem[]): string {
+function shellFull(siteName: string, headMarkup: string, bodyHtml: string, nav: NavItem[], themeCss: string): string {
   const navHtml = nav.map((n) => '<a href="' + esc(n.url) + '">' + esc(n.label) + '</a>').join('');
-  const adminLink = '<a href="/admin/login" style="color:#f97316">Admin</a>';
-  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><style>' + THEME_CSS + '</style>' + headMarkup + '</head><body><header><a href="/" class="site-name">' + esc(siteName) + '</a><nav>' + navHtml + adminLink + '</nav></header><main>' + bodyHtml + '</main><footer>Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
+  const adminLink = '<a href="/admin/login" class="admin-link">Admin</a>';
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><style>' + themeCss + '</style>' + headMarkup + '</head><body><header><div class="inner"><a href="/" class="site-name">' + esc(siteName) + '</a><nav>' + navHtml + adminLink + '</nav></div></header><main>' + bodyHtml + '</main><footer>Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>';
 }
 
 function renderPost(post: { title: string; content: string; updated_at: string }): string {

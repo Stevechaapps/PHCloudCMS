@@ -689,13 +689,22 @@ fetch('/api/admin/nav').then(function(r){return r.json()}).then(function(data){i
 
 // ── Settings page ──────────────────────────────────────────────────
 
-export function settingsBody(current: { imgur_client_id: string }): string {
+export function settingsBody(current: { imgur_client_id: string; theme: string; available_themes: { id: string; name: string }[] }): string {
+const themeOpts = current.available_themes.map(function(t) {
+const sel = t.id === current.theme ? ' selected' : '';
+return '<option value="' + escAttr(t.id) + '"' + sel + '>' + esc(t.name) + '</option>';
+}).join('');
 return `<h2 style="margin-bottom:1.5rem">Settings</h2>
 <form id="form" style="max-width:500px">
 <div class="form-group">
 <label for="imgur_client_id">Imgur Client ID <span style="color:#64748b;font-weight:400">(for image uploads)</span></label>
 <input type="text" id="imgur_client_id" name="imgur_client_id" value="${escAttr(current.imgur_client_id)}" placeholder="Register at https://api.imgur.com/oauth2/addclient" />
 <p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Paste images into the post editor to auto-upload via Imgur. Get a Client ID by registering an app on Imgur (no auth needed).</p>
+</div>
+<div class="form-group">
+<label for="theme">Public Site Theme</label>
+<select id="theme" name="theme" style="width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem;font-family:inherit;background:white">${themeOpts}</select>
+<p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Create your own theme by adding a <code>.ts</code> file to <code>src/themes/</code> and registering it in <code>src/themes/index.ts</code>.</p>
 </div>
 <button type="submit" class="btn btn-primary">Save Settings</button>
 <div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
@@ -710,9 +719,10 @@ fetch('/api/admin/settings',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({
-imgur_client_id:document.getElementById('imgur_client_id').value
+imgur_client_id:document.getElementById('imgur_client_id').value,
+theme:document.getElementById('theme').value
 })}).then(function(res){
-if(res.ok){status.style.color='#16a34a';status.textContent='Saved!'}
+if(res.ok){status.style.color='#16a34a';status.textContent='Saved!';setTimeout(function(){location.reload()},800)}
 else{status.style.color='#dc2626';status.textContent='Error saving settings'}})});
 </script>`;
 }
