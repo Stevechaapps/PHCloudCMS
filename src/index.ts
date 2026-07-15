@@ -420,20 +420,21 @@ app.post('/api/upload', async (c) => {
   for (let i = 0; i < bytes.length; i += 8192) {
     binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)));
   }
-  const params = new URLSearchParams();
-  params.set('key', apiKey);
-  params.set('image', btoa(binary));
+  const imgbbForm = new FormData();
+  imgbbForm.append('key', apiKey);
+  imgbbForm.append('image', btoa(binary));
   const res = await fetch('https://api.imgbb.com/1/upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params
+    body: imgbbForm
   });
   const text = await res.text();
   let data: Record<string, unknown>;
   try { data = JSON.parse(text) } catch { return c.json({ error: text }, 500); }
-  const d = data.data;
-  if (data.success && d && typeof d === 'object' && 'url' in d) {
-    return c.json({ url: (d as Record<string, unknown>).url as string });
+  if (data.success) {
+    const d = data.data;
+    if (d && typeof d === 'object' && 'url' in d) {
+      return c.json({ url: (d as Record<string, unknown>).url as string });
+    }
   }
   return c.json({ error: JSON.stringify(data) }, 500);
 });
