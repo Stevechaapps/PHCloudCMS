@@ -25,6 +25,8 @@ export async function getImage(
 export async function deleteImage(
   db: D1Database,
   id: number,
+  kv?: KVNamespace,
 ): Promise<void> {
   await db.prepare("DELETE FROM images WHERE id = ?").bind(id).run();
+  if (kv) await kv.delete(`img:${id}`);
 }

@@ -969,8 +969,8 @@ export function imagesBody(): string {
 <script>
 function ea(s){return s.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,'&#39;')}
 function fmtSize(b){return b>1048576?(b/1048576).toFixed(1)+' MB':b>1024?(b/1024).toFixed(1)+' KB':b+' B'}
-fetch('/api/admin/images').then(function(r){return r.json()}).then(function(imgs){
-document.getElementById('imgCount').textContent=imgs.length+' image'+(imgs.length===1?'':'s');
+fetch('/api/admin/images').then(function(r){return r.json()}).then(function(data){var imgs=data.results||[];
+document.getElementById('imgCount').textContent=data.total+' image'+(data.total===1?'':'s');
 var grid=document.getElementById('imageGrid');
 if(!imgs.length){grid.innerHTML='<p style="color:#64748b;grid-column:1/-1">No images uploaded yet. Upload images from the post editor.</p>';return}
 grid.innerHTML=imgs.map(function(img){
@@ -980,7 +980,8 @@ return '<div class="image-card">'
 +'<div class="name" title="'+ea(img.filename)+'">'+ea(img.filename)+'</div>'
 +'<div class="meta">'+fmtSize(img.size)+' · '+new Date(img.created_at).toLocaleDateString()+'</div>'
 +'<div class="actions"><button class="btn btn-sm btn-danger" onclick="delImg('+img.id+')">Delete</button></div>'
-+'</div></div>'}).join('')});
++'</div></div>'}).join('');
+if(data.totalPages>1)document.getElementById('imgCount').innerHTML+=' <span style="font-weight:400">Page '+data.page+' of '+data.totalPages+'</span>';});
 function delImg(id){if(!confirm('Delete this image? This action cannot be undone.'))return;fetch('/api/admin/images/'+id,{method:'DELETE'}).then(function(){location.reload()})}
 </script>`;
 }

@@ -69,8 +69,22 @@ const app = new Hono<{ Bindings: Env }>();
 app.use("*", onboardingGuard);
 
 // ── Auth ──────────────────────────────────────────────────────────
-
 app.post("/api/auth/login", async (c) => {
+  const ip = c.req.header("cf-connecting-ip") ?? "unknown";
+  const key = `login:${ip}`;
+  const count = await c.env.CACHE.get(key);
+  const attempts = Number.parseInt(count ?? "0", 10);
+  if (attempts >= 5) {
+    const ttl = await c.env.CACHE.get(key + ":ts");
+    if (ttl && Number(ttl) > Date.now()) {
+      const waitSec = Math.ceil((Number(ttl) - Date.now()) / 1000);
+      return c.body(
+        JSON.stringify({ error: `Too many attempts. Try again in ${waitSec}s` }),
+        429,
+        { "Content-Type": "application/json" },
+      );
+    }
+  }
   const { username, password } = await c.req.json<{
     username?: string;
     password?: string;
@@ -81,19 +95,20 @@ app.post("/api/auth/login", async (c) => {
     .bind(String(username ?? ""))
     .first<{ id: number; password_hash: string }>();
 
-  if (!admin)
-    return c.body(JSON.stringify({ error: "Invalid credentials" }), 401, {
-      "Content-Type": "application/json",
-    });
+  const valid =
+    admin &&
+    (await verifyPassword(String(password ?? ""), admin.password_hash));
 
-  const valid = await verifyPassword(
-    String(password ?? ""),
-    admin.password_hash,
-  );
-  if (!valid)
+  if (!valid) {
+    const newCount = attempts + 1;
+    await c.env.CACHE.put(key, String(newCount), { expirationTtl: 300 });
+    if (newCount >= 5) {
+      await c.env.CACHE.put(key + ":ts", String(Date.now() + 300000), { expirationTtl: 300 });
+    }
     return c.body(JSON.stringify({ error: "Invalid credentials" }), 401, {
       "Content-Type": "application/json",
     });
+  }
 
   const sessionId = crypto.randomUUID();
   await c.env.CACHE.put(`session:${sessionId}`, String(admin.id), {
@@ -335,9 +350,16 @@ app.patch("/api/admin/posts/:id/unpublish", async (c) => {
 
 app.post("/api/install", async (c) => {
   const db = c.env.DB;
+  if (await isConfigured(db)) {
+    return c.body(
+      JSON.stringify({ error: "Already configured" }),
+      409,
+      { "Content-Type": "application/json" },
+    );
+  }
   try {
-    const body = await c.req.parseBody();
-    const siteName = String(body.siteName ?? "My Site");
+  const body = await c.req.parseBody();
+  const siteName = String(body.siteName ?? "My Site");
     const adminPassword = String(body.adminPassword ?? "");
     if (adminPassword.length < 8) {
       return c.body(
@@ -649,16 +671,30 @@ app.post("/api/admin/images", async (c) => {
 app.get("/api/admin/images", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const rows = await c.env.DB.prepare(
-    "SELECT id, filename, mime, size, created_at FROM images ORDER BY created_at DESC",
-  ).all<{
-    id: number;
-    filename: string;
-    mime: string;
-    size: number;
-    created_at: string;
-  }>();
-  return c.json(rows.results);
+  const page = Math.max(1, Number.parseInt(c.req.query("page") ?? "1", 10));
+  const perPage = 20;
+  const offset = (page - 1) * perPage;
+  const [countRow, rows] = await Promise.all([
+    c.env.DB.prepare("SELECT COUNT(*) as cnt FROM images").first<{ cnt: number }>(),
+    c.env.DB
+      .prepare(
+        "SELECT id, filename, mime, size, created_at FROM images ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      )
+      .bind(perPage, offset)
+      .all<{
+        id: number;
+        filename: string;
+        mime: string;
+        size: number;
+        created_at: string;
+      }>(),
+  ]);
+  return c.json({
+    results: rows.results,
+    total: countRow?.cnt ?? 0,
+    page,
+    totalPages: Math.ceil((countRow?.cnt ?? 0) / perPage),
+  });
 });
 
 app.delete("/api/admin/images/:id", async (c) => {
@@ -666,7 +702,7 @@ app.delete("/api/admin/images/:id", async (c) => {
   if (auth instanceof Response) return auth;
   const id = parseInt(c.req.param("id"), 10);
   if (isNaN(id)) return c.body(null, 400);
-  await deleteImage(c.env.DB, id);
+  await deleteImage(c.env.DB, id, c.env.CACHE);
   await c.env.CACHE.delete(`img:${id}:data`);
   await c.env.CACHE.delete(`img:${id}:meta`);
   return c.body(null, 204);
