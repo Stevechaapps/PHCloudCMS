@@ -4,43 +4,43 @@
 // ── Layout shell (sidebar + topbar + content slot) ──────────────────
 
 export function adminShell(title: string, bodyHtml: string): string {
-const styles = [
-  '*{margin:0;padding:0;box-sizing:border-box}',
-  'body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b}',
-  '.topbar{background:#0f172a;color:white;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between}',
-  '.topbar a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem}',
-  '.topbar a:hover{color:white}',
-  '.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 52px)}',
-  '.sidebar{background:white;border-right:1px solid #e5e7eb;padding:1.5rem 0}',
-  '.sidebar a{display:block;padding:0.5rem 1.5rem;color:#1a1a1a;text-decoration:none;font-size:0.9rem}',
-  '.sidebar a:hover{background:#f1f5f9}',
-  '.content{padding:2rem}',
-  'table{width:100%;border-collapse:collapse}',
-  'th,td{text-align:left;padding:0.6rem 0.75rem;border-bottom:1px solid #e5e7eb;font-size:0.9rem}',
-  'th{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b}',
-  '.badge{display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:500}',
-  '.badge-pub{background:#dcfce7;color:#166534}',
-  '.badge-draft{background:#fef3c7;color:#92400e}',
-  '.badge-info{background:#dbeafe;color:#1e40af}',
-  '.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.45rem 0.9rem;border-radius:4px;font-size:0.8rem;text-decoration:none;cursor:pointer;border:none;font-weight:500}',
-  '.btn-primary{background:#0f172a;color:white}',
-  '.btn-sm{padding:0.3rem 0.6rem;border-radius:4px;border:1px solid #e5e7eb;background:white;cursor:pointer;font-size:0.8rem}',
-  '.btn-danger{color:#dc2626}',
-  '.toolbar{display:flex;gap:2px;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-bottom:none;border-radius:5px 5px 0 0;flex-wrap:wrap;margin-bottom:0}',
-  '.toolbar button{background:none;border:none;padding:0.3rem 0.55rem;border-radius:3px;cursor:pointer;font-size:0.8rem;color:#475569;font-weight:500}',
-  '.toolbar button:hover{background:#e2e8f0;color:#1e293b}',
-  '.toolbar .sep{width:1px;background:#e2e8f0;margin:0 0.25rem}',
-  '.preview-box{background:white;border:1px solid #e2e8f0;border-radius:0 0 5px 5px;padding:1rem;min-height:200px;font-size:0.9rem;line-height:1.7;display:none;overflow-y:auto}',
-  '.preview-box h1{font-size:1.4rem;margin:0.5rem 0}.preview-box h2{font-size:1.2rem;margin:0.4rem 0}.preview-box h3{font-size:1.05rem;margin:0.3rem 0}.preview-box p{margin:0.5rem 0}.preview-box code{background:#f1f5f9;padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em}.preview-box img{max-width:100%;border-radius:4px;margin:0.5rem 0}',
-  '.form-group{margin-bottom:1.25rem}',
-  'label{display:block;font-weight:500;margin-bottom:0.4rem;font-size:0.9rem}',
-  'input[type="text"],textarea{width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem;font-family:inherit}',
-  'textarea{min-height:320px;font-family:monospace;font-size:0.9rem;line-height:1.5}',
-  '.row{display:flex;gap:1rem}',
-  '.row .form-group{flex:1}',
-].join(' ');
+  const styles = [
+    "*{margin:0;padding:0;box-sizing:border-box}",
+    "body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b}",
+    ".topbar{background:#0f172a;color:white;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between}",
+    ".topbar a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem}",
+    ".topbar a:hover{color:white}",
+    ".layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 52px)}",
+    ".sidebar{background:white;border-right:1px solid #e5e7eb;padding:1.5rem 0}",
+    ".sidebar a{display:block;padding:0.5rem 1.5rem;color:#1a1a1a;text-decoration:none;font-size:0.9rem}",
+    ".sidebar a:hover{background:#f1f5f9}",
+    ".content{padding:2rem}",
+    "table{width:100%;border-collapse:collapse}",
+    "th,td{text-align:left;padding:0.6rem 0.75rem;border-bottom:1px solid #e5e7eb;font-size:0.9rem}",
+    "th{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b}",
+    ".badge{display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:500}",
+    ".badge-pub{background:#dcfce7;color:#166534}",
+    ".badge-draft{background:#fef3c7;color:#92400e}",
+    ".badge-info{background:#dbeafe;color:#1e40af}",
+    ".btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.45rem 0.9rem;border-radius:4px;font-size:0.8rem;text-decoration:none;cursor:pointer;border:none;font-weight:500}",
+    ".btn-primary{background:#0f172a;color:white}",
+    ".btn-sm{padding:0.3rem 0.6rem;border-radius:4px;border:1px solid #e5e7eb;background:white;cursor:pointer;font-size:0.8rem}",
+    ".btn-danger{color:#dc2626}",
+    ".toolbar{display:flex;gap:2px;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-bottom:none;border-radius:5px 5px 0 0;flex-wrap:wrap;margin-bottom:0}",
+    ".toolbar button{background:none;border:none;padding:0.3rem 0.55rem;border-radius:3px;cursor:pointer;font-size:0.8rem;color:#475569;font-weight:500}",
+    ".toolbar button:hover{background:#e2e8f0;color:#1e293b}",
+    ".toolbar .sep{width:1px;background:#e2e8f0;margin:0 0.25rem}",
+    ".preview-box{background:white;border:1px solid #e2e8f0;border-radius:0 0 5px 5px;padding:1rem;min-height:200px;font-size:0.9rem;line-height:1.7;display:none;overflow-y:auto}",
+    ".preview-box h1{font-size:1.4rem;margin:0.5rem 0}.preview-box h2{font-size:1.2rem;margin:0.4rem 0}.preview-box h3{font-size:1.05rem;margin:0.3rem 0}.preview-box p{margin:0.5rem 0}.preview-box code{background:#f1f5f9;padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em}.preview-box img{max-width:100%;border-radius:4px;margin:0.5rem 0}",
+    ".form-group{margin-bottom:1.25rem}",
+    "label{display:block;font-weight:500;margin-bottom:0.4rem;font-size:0.9rem}",
+    'input[type="text"],textarea{width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem;font-family:inherit}',
+    "textarea{min-height:320px;font-family:monospace;font-size:0.9rem;line-height:1.5}",
+    ".row{display:flex;gap:1rem}",
+    ".row .form-group{flex:1}",
+  ].join(" ");
 
-return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -87,7 +87,7 @@ async function logout(e){e.preventDefault();await fetch('/api/auth/logout',{meth
 // ── Dashboard ──────────────────────────────────────────────────────
 
 export function dashboardBody(): string {
-return `<h2 style="margin-bottom:1.5rem">Dashboard</h2>
+  return `<h2 style="margin-bottom:1.5rem">Dashboard</h2>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem">
 <div style="background:white;border:1px solid #e5e7eb;border-radius:6px;padding:1rem">
 <div style="font-size:0.75rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Total Posts</div>
@@ -134,7 +134,7 @@ function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{met
 // ── Posts list ─────────────────────────────────────────────────────
 
 export function postsBody(): string {
-return `<h2 style="margin-bottom:1rem">All Posts</h2>
+  return `<h2 style="margin-bottom:1rem">All Posts</h2>
 <a href="/admin/new" class="btn btn-primary" style="margin-bottom:1rem">+ New Post</a>
 <div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden">
 <table><thead><tr><th>Title</th><th>Slug</th><th>Status</th><th>Updated</th><th></th></tr></thead>
@@ -161,7 +161,7 @@ function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{met
 // ── New post form ──────────────────────────────────────────────────
 
 export function newPostBody(): string {
-return `<h2 style="margin-bottom:1.5rem">New Post</h2>
+  return `<h2 style="margin-bottom:1.5rem">New Post</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required /></div>
@@ -208,8 +208,7 @@ function mdWrap(e,c,ph){e.preventDefault();var ta=document.getElementById('conte
 function mdLine(e,p){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart;var ls=ta.value.lastIndexOf(String.fromCharCode(10),s-1)+1;ta.value=ta.value.substring(0,ls)+p+ta.value.substring(ls);ta.selectionStart=ta.selectionEnd=s+p.length;ta.focus()}
 function mdLink(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'link text';ta.value=val.substring(0,s)+'['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+2;ta.selectionEnd=s+sel.length+2+3;ta.focus()}
 function mdImage(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'alt';ta.value=val.substring(0,s)+'!['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+3;ta.selectionEnd=s+sel.length+3+3;ta.focus()}
-function togglePreview(e){e.preventDefault();var ta=document.getElementById('content'),pre=document.getElementById('preview');if(pre.style.display=='block'){pre.style.display='none';ta.style.display='block';return}ta.style.display='none';pre.style.display='block';pre.innerHTML=renderMd(ta.value)}
-function renderMd(t){return t.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/^###\\s+(.+)$/gm,'<h3>$1</h3>').replace(/^##\\s+(.+)$/gm,'<h2>$1</h2>').replace(/^#\\s+(.+)$/gm,'<h1>$1</h1>').replace(/^>\\s+(.+)$/gm,'<blockquote>$1</blockquote>').replace(/^---$/gm,'<hr>').replace(/\\*\\*(.+?)\\*\\*/g,'<strong>$1</strong>').replace(/\\*(.+?)\\*/g,'<em>$1</em>').replace(/\u0060(.+?)\u0060/g,'<code>$1</code>').replace(/!\\[(.*?)\\]\\((.+?)\\)/g,'<img src="$2" alt="$1">').replace(/\\[(.+?)\\]\\((.+?)\\)/g,'<a href="$2">$1</a>').split('\\n\\n').map(function(b){return b.trim()?'<p>'+b.replace(/\\n/g,'<br>')+'</p>':''}).join('')}
+function togglePreview(e){e.preventDefault();var ta=document.getElementById('content'),pre=document.getElementById('preview');if(pre.style.display=='block'){pre.style.display='none';ta.style.display='block';return}ta.style.display='none';pre.style.display='block';pre.textContent='Loading…';fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:ta.value})}).then(function(r){return r.json()}).then(function(data){pre.innerHTML=data.html}).catch(function(){pre.textContent='Preview failed'})}
 </script>
 <script>
 var titleEl=document.getElementById('title');
@@ -280,28 +279,30 @@ else{status.style.color='#dc2626';status.textContent=res.error||'Upload failed'}
 // ── Edit post form ─────────────────────────────────────────────────
 
 export function editBody(post: {
-id: string | number;
-title: string;
-slug: string;
-content: string;
-excerpt?: string;
-published: string | number;
-publish_at?: string | null;
-preview_token?: string | null;
-updated_at: string;
+  id: string | number;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  published: string | number;
+  publish_at?: string | null;
+  preview_token?: string | null;
+  updated_at: string;
 }): string {
-var id = String(post.id);
-var checked = (post.published == 1 || post.published === '1') ? 'checked' : '';
-var hasSchedule = !!post.publish_at;
-var scheduleChecked = hasSchedule ? 'checked' : '';
-var previewLink = post.preview_token ? '/' + post.slug + '?preview=' + post.preview_token : '';
-return `<h2 style="margin-bottom:1.5rem">Edit Post</h2>
+  var id = String(post.id);
+  var checked = post.published == 1 || post.published === "1" ? "checked" : "";
+  var hasSchedule = !!post.publish_at;
+  var scheduleChecked = hasSchedule ? "checked" : "";
+  var previewLink = post.preview_token
+    ? "/" + post.slug + "?preview=" + post.preview_token
+    : "";
+  return `<h2 style="margin-bottom:1.5rem">Edit Post</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(post.title)}" /></div>
 <div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(post.slug)}" /></div>
 </div>
-<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" value="${escAttr(String(post.excerpt ?? ''))}" /></div>
+<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" value="${escAttr(String(post.excerpt ?? ""))}" /></div>
  <div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label>
 <div class="toolbar">
 <button type="button" onclick="mdWrap(event,'**','bold')" title="Bold"><strong>B</strong></button>
@@ -327,8 +328,8 @@ return `<h2 style="margin-bottom:1.5rem">Edit Post</h2>
 </div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" ${checked} /> Published</label></div>
 <div class="form-group"><label><input type="checkbox" id="schedule" onchange="scheduleToggle()" ${scheduleChecked} /> Schedule for later</label>
-<input type="datetime-local" id="publish_at" name="publish_at" style="${hasSchedule?'display:block':'display:none'};margin-top:0.4rem" value="${post.publish_at ? post.publish_at.replace('Z','').substring(0,19) : ''}" /></div>
-${previewLink ? '<div style="font-size:0.85rem;margin-bottom:0.75rem"><a href="' + previewLink + '" target="_blank" style="color:#3b82f6;text-decoration:none">Preview unpublished post ↗</a></div>' : ''}
+<input type="datetime-local" id="publish_at" name="publish_at" style="${hasSchedule ? "display:block" : "display:none"};margin-top:0.4rem" value="${post.publish_at ? post.publish_at.replace("Z", "").substring(0, 19) : ""}" /></div>
+${previewLink ? '<div style="font-size:0.85rem;margin-bottom:0.75rem"><a href="' + previewLink + '" target="_blank" style="color:#3b82f6;text-decoration:none">Preview unpublished post ↗</a></div>' : ""}
 <div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${escAttr(post.updated_at)}</div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Update Post</button>
@@ -344,8 +345,7 @@ function mdWrap(e,c,ph){e.preventDefault();var ta=document.getElementById('conte
 function mdLine(e,p){e.preventDefault();var ta=document.getElementById('content');var ls=ta.value.lastIndexOf(String.fromCharCode(10),ta.selectionStart-1)+1;ta.value=ta.value.substring(0,ls)+p+ta.value.substring(ls);ta.selectionStart=ta.selectionEnd=ta.selectionStart+p.length;ta.focus()}
 function mdLink(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'link text';ta.value=val.substring(0,s)+'['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+2;ta.selectionEnd=s+sel.length+2+3;ta.focus()}
 function mdImage(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'alt';ta.value=val.substring(0,s)+'!['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+3;ta.selectionEnd=s+sel.length+3+3;ta.focus()}
-function togglePreview(e){e.preventDefault();var ta=document.getElementById('content'),pre=document.getElementById('preview');if(pre.style.display=='block'){pre.style.display='none';ta.style.display='block';return}ta.style.display='none';pre.style.display='block';pre.innerHTML=renderMd(ta.value)}
-function renderMd(t){return t.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/^###\\s+(.+)$/gm,'<h3>$1</h3>').replace(/^##\\s+(.+)$/gm,'<h2>$1</h2>').replace(/^#\\s+(.+)$/gm,'<h1>$1</h1>').replace(/^>\\s+(.+)$/gm,'<blockquote>$1</blockquote>').replace(/^---$/gm,'<hr>').replace(/\\*\\*(.+?)\\*\\*/g,'<strong>$1</strong>').replace(/\\*(.+?)\\*/g,'<em>$1</em>').replace(/\u0060(.+?)\u0060/g,'<code>$1</code>').replace(/!\\[(.*?)\\]\\((.+?)\\)/g,'<img src="$2" alt="$1">').replace(/\\[(.+?)\\]\\((.+?)\\)/g,'<a href="$2">$1</a>').split('\\n\\n').map(function(b){return b.trim()?'<p>'+b.replace(/\\n/g,'<br>')+'</p>':''}).join('')}
+function togglePreview(e){e.preventDefault();var ta=document.getElementById('content'),pre=document.getElementById('preview');if(pre.style.display=='block'){pre.style.display='none';ta.style.display='block';return}ta.style.display='none';pre.style.display='block';pre.textContent='Loading…';fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:ta.value})}).then(function(r){return r.json()}).then(function(data){pre.innerHTML=data.html}).catch(function(){pre.textContent='Preview failed'})}
 </script>
 <script>
 var titleEl=document.getElementById('title');
@@ -418,7 +418,7 @@ else{status.style.color='#dc2626';status.textContent=res.error||'Upload failed'}
 // ── Login form ─────────────────────────────────────────────────────
 
 export function loginForm(): string {
-return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -473,15 +473,15 @@ else{window.location.href='/admin'}})});
 // ── Plugins manager page ───────────────────────────────────────────
 
 var PLUGIN_CATEGORIES = [
-  { key: 'seo',       label: 'SEO' },
-  { key: 'security',  label: 'Security' },
-  { key: 'forms',     label: 'Forms' },
-  { key: 'analytics', label: 'Analytics' },
-  { key: 'backup',    label: 'Backup & Export' },
-  { key: 'ecommerce', label: 'E-Commerce' },
-  { key: 'social',    label: 'Social' },
-  { key: 'media',     label: 'Media' },
-  { key: 'custom',    label: 'Custom' },
+  { key: "seo", label: "SEO" },
+  { key: "security", label: "Security" },
+  { key: "forms", label: "Forms" },
+  { key: "analytics", label: "Analytics" },
+  { key: "backup", label: "Backup & Export" },
+  { key: "ecommerce", label: "E-Commerce" },
+  { key: "social", label: "Social" },
+  { key: "media", label: "Media" },
+  { key: "custom", label: "Custom" },
 ];
 
 export function pluginsBody(
@@ -494,7 +494,7 @@ export function pluginsBody(
     author: string;
     hooks: string[];
   }>,
-  activePluginIds: Set<string>
+  activePluginIds: Set<string>,
 ): string {
   var byCategory: Record<string, typeof availablePlugins> = {};
   for (var i = 0; i < availablePlugins.length; i++) {
@@ -504,55 +504,79 @@ export function pluginsBody(
   }
 
   var html = '<h2 style="margin-bottom:0.5rem">Plugins</h2>';
-  html += '<p style="color:#64748b;margin-bottom:2rem;font-size:0.9rem">Toggle plugins on or off. Changes take effect immediately.</p>';
+  html +=
+    '<p style="color:#64748b;margin-bottom:2rem;font-size:0.9rem">Toggle plugins on or off. Changes take effect immediately.</p>';
 
   for (var c = 0; c < PLUGIN_CATEGORIES.length; c++) {
     var cat = PLUGIN_CATEGORIES[c];
     var plugins = byCategory[cat.key];
     if (!plugins || !plugins.length) continue;
 
-    html += '<h3 style="margin:2rem 0 1rem;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b">';
-    html += esc(cat.label) + '</h3>';
-    html += '<div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:1.5rem">';
+    html +=
+      '<h3 style="margin:2rem 0 1rem;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b">';
+    html += esc(cat.label) + "</h3>";
+    html +=
+      '<div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:1.5rem">';
 
     for (var j = 0; j < plugins.length; j++) {
       var pl = plugins[j];
       var isActive = activePluginIds.has(pl.id);
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;';
+      html +=
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;';
       html += 'border-bottom:1px solid #f1f5f9">';
       html += '<div style="flex:1;min-width:0">';
       html += '<div style="font-weight:600;font-size:0.95rem">' + esc(pl.name);
-      html += ' <span style="font-weight:400;color:#94a3b8;font-size:0.8rem">v' + esc(pl.version) + '</span></div>';
-      html += '<div style="color:#64748b;font-size:0.85rem;margin-top:0.2rem">' + esc(pl.description) + '</div>';
-      html += '<div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem">by ' + esc(pl.author);
-      html += ' · hooks: ' + esc(pl.hooks.join(', ')) + '</div>';
-      html += '</div>';
+      html +=
+        ' <span style="font-weight:400;color:#94a3b8;font-size:0.8rem">v' +
+        esc(pl.version) +
+        "</span></div>";
+      html +=
+        '<div style="color:#64748b;font-size:0.85rem;margin-top:0.2rem">' +
+        esc(pl.description) +
+        "</div>";
+      html +=
+        '<div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem">by ' +
+        esc(pl.author);
+      html += " · hooks: " + esc(pl.hooks.join(", ")) + "</div>";
+      html += "</div>";
       html += '<div style="margin-left:1.5rem;flex-shrink:0">';
-      html += '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">';
-      html += '<input type="checkbox" class="plugin-toggle" data-plugin="' + escAttr(pl.id) + '"';
-      html += isActive ? ' checked' : '';
-      html += ' />';
-      html += '<span style="font-size:0.85rem;color:#64748b">' + (isActive ? 'Active' : 'Inactive') + '</span>';
-      html += '</label></div></div>';
+      html +=
+        '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">';
+      html +=
+        '<input type="checkbox" class="plugin-toggle" data-plugin="' +
+        escAttr(pl.id) +
+        '"';
+      html += isActive ? " checked" : "";
+      html += " />";
+      html +=
+        '<span style="font-size:0.85rem;color:#64748b">' +
+        (isActive ? "Active" : "Inactive") +
+        "</span>";
+      html += "</label></div></div>";
     }
 
-    html += '</div>';
+    html += "</div>";
   }
 
   if (!availablePlugins.length) {
-    html += '<div style="text-align:center;padding:3rem;color:#64748b">No plugins available.';
-    html += ' Add files to <code>src/plugins/</code> and list them in <code>src/plugins/index.ts</code>.</div>';
+    html +=
+      '<div style="text-align:center;padding:3rem;color:#64748b">No plugins available.';
+    html +=
+      " Add files to <code>src/plugins/</code> and list them in <code>src/plugins/index.ts</code>.</div>";
   }
 
-  html += '<script>';
-  html += 'document.querySelectorAll(".plugin-toggle").forEach(function(cb){cb.addEventListener("change",function(){';
-  html += 'var id=cb.dataset.plugin;cb.disabled=true;';
-  html += 'fetch("/api/admin/plugins/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},';
-  html += 'body:JSON.stringify({active:cb.checked})}).then(function(res){cb.disabled=false;';
+  html += "<script>";
+  html +=
+    'document.querySelectorAll(".plugin-toggle").forEach(function(cb){cb.addEventListener("change",function(){';
+  html += "var id=cb.dataset.plugin;cb.disabled=true;";
+  html +=
+    'fetch("/api/admin/plugins/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},';
+  html +=
+    "body:JSON.stringify({active:cb.checked})}).then(function(res){cb.disabled=false;";
   html += 'if(!res.ok){cb.checked=!cb.checked;alert("Failed to save")}';
   html += 'var span=cb.closest("label").querySelector("span");';
   html += 'if(span)span.textContent=cb.checked?"Active":"Inactive"})})});';
-  html += '</script>';
+  html += "</script>";
 
   return html;
 }
@@ -560,7 +584,7 @@ export function pluginsBody(
 // ── Pages list ──────────────────────────────────────────────────────
 
 export function pagesBody(): string {
-return `<h2 style="margin-bottom:1rem">Pages</h2>
+  return `<h2 style="margin-bottom:1rem">Pages</h2>
 <a href="/admin/pages/new" class="btn btn-primary" style="margin-bottom:1rem">+ New Page</a>
 <div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden">
 <table><thead><tr><th>Title</th><th>Slug</th><th>Status</th><th>Updated</th><th></th></tr></thead>
@@ -587,7 +611,7 @@ function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/pages/'+id,{met
 // ── New page form ──────────────────────────────────────────────────
 
 export function newPageBody(): string {
-return `<h2 style="margin-bottom:1.5rem">New Page</h2>
+  return `<h2 style="margin-bottom:1.5rem">New Page</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required /></div>
@@ -632,16 +656,16 @@ else{status.style.color='#dc2626';status.textContent='Error saving page'}})});
 // ── Edit page form ─────────────────────────────────────────────────
 
 export function editPageBody(page: {
-id: string | number;
-title: string;
-slug: string;
-content: string;
-published: string | number;
-updated_at: string;
+  id: string | number;
+  title: string;
+  slug: string;
+  content: string;
+  published: string | number;
+  updated_at: string;
 }): string {
-var id = String(page.id);
-var checked = (page.published == 1 || page.published === '1') ? 'checked' : '';
-return `<h2 style="margin-bottom:1.5rem">Edit Page</h2>
+  var id = String(page.id);
+  var checked = page.published == 1 || page.published === "1" ? "checked" : "";
+  return `<h2 style="margin-bottom:1.5rem">Edit Page</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(page.title)}" /></div>
@@ -685,7 +709,7 @@ else{status.style.color='#dc2626';status.textContent='Error updating page'}})});
 // ── Categories editor ──────────────────────────────────────────────
 
 export function categoriesBody(): string {
-return `<h2 style="margin-bottom:1.5rem">Categories</h2>
+  return `<h2 style="margin-bottom:1.5rem">Categories</h2>
 <form id="catForm" style="display:flex;gap:0.75rem;margin-bottom:2rem;max-width:500px">
 <div style="flex:1"><label for="name">Category name</label><input type="text" id="name" required /></div>
 <div style="flex:1"><label for="slug">Slug</label><input type="text" id="slug" required placeholder="auto" /></div>
@@ -725,7 +749,7 @@ load();
 // ── Navigation editor ──────────────────────────────────────────────
 
 export function navBody(): string {
-return `<h2 style="margin-bottom:1.5rem">Navigation</h2>
+  return `<h2 style="margin-bottom:1.5rem">Navigation</h2>
 <p style="color:#64748b;margin-bottom:1.5rem;font-size:0.9rem">Links appear in the header of your public site. The <strong>Admin</strong> link is always included automatically.</p>
 <div id="items"></div>
 <div style="margin:1rem 0"><button class="btn btn-sm" onclick="addItem()">+ Add Link</button></div>
@@ -757,26 +781,28 @@ fetch('/api/admin/nav').then(function(r){return r.json()}).then(function(data){i
 // ── Settings page ──────────────────────────────────────────────────
 
 export function settingsBody(): string {
-return `<h2 style="margin-bottom:1.5rem">Settings</h2>
+  return `<h2 style="margin-bottom:1.5rem">Settings</h2>
 <p style="color:#64748b">No settings to configure. Paste images into the post editor — they auto-upload via catbox.moe.</p>`;
 }
 
 // ── Escaping helpers ──────────────────────────────────────────────
 
 function esc(s: string): string {
-  return s.replace(/&/g, '&amp;')
-           .replace(/</g, '&lt;')
-           .replace(/>/g, '&gt;')
-           .replace(/"/g, '&quot;');
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function escAttr(s: string): string {
-  return s.replace(/&/g, '&amp;')
-           .replace(/"/g, '&quot;')
-           .replace(/</g, '&lt;')
-           .replace(/>/g, '&gt;');
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
