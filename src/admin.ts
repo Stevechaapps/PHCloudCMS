@@ -249,26 +249,25 @@ setTimeout(function(){location.href='/admin/edit/'+p.id},500)})}
  else{status.style.color='#dc2626';status.textContent='Error saving post'}})});
 </script>
 <script>
-var imgurClientId='';
-fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){imgurClientId=s.imgur_client_id});
+var imgbbApiKey='';
+fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){imgbbApiKey=s.imgbb_api_key});
 var contentTa=document.getElementById('content');
 contentTa.addEventListener('paste',function(e){
-if(!imgurClientId)return;
+if(!imgbbApiKey)return;
 var files=e.clipboardData.files;
 if(!files.length)return;
 e.preventDefault();
 var ta=this;
 var status=document.getElementById('status');
 status.style.color='#2563eb';
-status.textContent='Uploading image to Imgur…';
+status.textContent='Uploading image to ImgBB…';
 var fd=new FormData();
 fd.append('image',files[0]);
-fetch('https://api.imgur.com/3/image',{
+fetch('https://api.imgbb.com/1/upload?key='+imgbbApiKey,{
 method:'POST',
-headers:{'Authorization':'Client-ID '+imgurClientId},
 body:fd}).then(function(r){return r.json()}).then(function(res){
 if(res.success){
-var url=res.data.link;
+var url=res.data.url;
 var markdown='![]('+url+')';
 var start=ta.selectionStart,end=ta.selectionEnd;
 var val=ta.value;
@@ -277,8 +276,8 @@ ta.selectionStart=ta.selectionEnd=start+markdown.length;
 ta.focus();
 status.style.color='#16a34a';
 status.textContent='Image uploaded: '+url}
-else{status.style.color='#dc2626';status.textContent='Imgur upload failed'}})
-.catch(function(){status.style.color='#dc2626';status.textContent='Imgur upload error'})});
+else{status.style.color='#dc2626';status.textContent='ImgBB upload failed'}})
+.catch(function(){status.style.color='#dc2626';status.textContent='ImgBB upload error'})});
 </script>`;
 }
 
@@ -392,26 +391,25 @@ if(res.ok){status.style.color='#16a34a';status.textContent='Updated!'}
 else{status.style.color='#dc2626';status.textContent='Error updating post'}})});
 </script>
 <script>
-var imgurClientId='';
-fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){imgurClientId=s.imgur_client_id});
+var imgbbApiKey='';
+fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){imgbbApiKey=s.imgbb_api_key});
 var contentTa=document.getElementById('content');
 contentTa.addEventListener('paste',function(e){
-if(!imgurClientId)return;
+if(!imgbbApiKey)return;
 var files=e.clipboardData.files;
 if(!files.length)return;
 e.preventDefault();
 var ta=this;
 var status=document.getElementById('status');
 status.style.color='#2563eb';
-status.textContent='Uploading image to Imgur…';
+status.textContent='Uploading image to ImgBB…';
 var fd=new FormData();
 fd.append('image',files[0]);
-fetch('https://api.imgur.com/3/image',{
+fetch('https://api.imgbb.com/1/upload?key='+imgbbApiKey,{
 method:'POST',
-headers:{'Authorization':'Client-ID '+imgurClientId},
 body:fd}).then(function(r){return r.json()}).then(function(res){
 if(res.success){
-var url=res.data.link;
+var url=res.data.url;
 var markdown='![]('+url+')';
 var start=ta.selectionStart,end=ta.selectionEnd;
 var val=ta.value;
@@ -420,8 +418,8 @@ ta.selectionStart=ta.selectionEnd=start+markdown.length;
 ta.focus();
 status.style.color='#16a34a';
 status.textContent='Image uploaded: '+url}
-else{status.style.color='#dc2626';status.textContent='Imgur upload failed'}})
-.catch(function(){status.style.color='#dc2626';status.textContent='Imgur upload error'})});
+else{status.style.color='#dc2626';status.textContent='ImgBB upload failed'}})
+.catch(function(){status.style.color='#dc2626';status.textContent='ImgBB upload error'})});
 </script>`;
 }
 
@@ -766,13 +764,13 @@ fetch('/api/admin/nav').then(function(r){return r.json()}).then(function(data){i
 
 // ── Settings page ──────────────────────────────────────────────────
 
-export function settingsBody(current: { imgur_client_id: string }): string {
+export function settingsBody(current: { imgbb_api_key: string }): string {
 return `<h2 style="margin-bottom:1.5rem">Settings</h2>
 <form id="form" style="max-width:500px">
 <div class="form-group">
-<label for="imgur_client_id">Imgur Client ID <span style="color:#64748b;font-weight:400">(for image uploads)</span></label>
-<input type="text" id="imgur_client_id" name="imgur_client_id" value="${escAttr(current.imgur_client_id)}" placeholder="Register at https://api.imgur.com/oauth2/addclient" />
-<p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Paste images into the post editor to auto-upload via Imgur. Get a Client ID by registering an app on Imgur (no auth needed).</p>
+<label for="imgbb_api_key">ImgBB API Key <span style="color:#64748b;font-weight:400">(for image uploads)</span></label>
+<input type="text" id="imgbb_api_key" name="imgbb_api_key" value="${escAttr(current.imgbb_api_key)}" placeholder="Get your key at https://api.imgbb.com" />
+<p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Paste images into the post editor to auto-upload via ImgBB. Get a free API key from imgbb.com.</p>
 </div>
 <button type="submit" class="btn btn-primary">Save Settings</button>
 <div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
@@ -787,7 +785,7 @@ fetch('/api/admin/settings',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({
-imgur_client_id:document.getElementById('imgur_client_id').value
+imgbb_api_key:document.getElementById('imgbb_api_key').value
 })}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Saved!'}
 else{status.style.color='#dc2626';status.textContent='Error saving settings'}})});

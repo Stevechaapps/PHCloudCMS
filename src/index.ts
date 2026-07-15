@@ -365,8 +365,8 @@ app.get('/admin/nav', async (c) => {
 app.get('/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const imgurClientId = await getSetting(c.env.DB, 'imgur_client_id') ?? '';
-  return c.html(adminShell('Settings', settingsBody({ imgur_client_id: imgurClientId })));
+  const imgbbApiKey = await getSetting(c.env.DB, 'imgbb_api_key') ?? '';
+  return c.html(adminShell('Settings', settingsBody({ imgbb_api_key: imgbbApiKey })));
 });
 
 app.get('/admin/login', (c) => {
@@ -379,15 +379,15 @@ app.get('/admin/login', (c) => {
 app.get('/api/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const imgurClientId = await getSetting(c.env.DB, 'imgur_client_id') ?? '';
-  return c.json({ imgur_client_id: imgurClientId });
+  const imgbbApiKey = await getSetting(c.env.DB, 'imgbb_api_key') ?? '';
+  return c.json({ imgbb_api_key: imgbbApiKey });
 });
 
 app.post('/api/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const body = await c.req.json<{ imgur_client_id?: string }>();
-  await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('imgur_client_id', ?)").bind(body.imgur_client_id ?? '').run();
+  const body = await c.req.json<{ imgbb_api_key?: string }>();
+  await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('imgbb_api_key', ?)").bind(body.imgbb_api_key ?? '').run();
   await c.env.CACHE.delete('cms:config');
   return c.json({ ok: true });
 });
