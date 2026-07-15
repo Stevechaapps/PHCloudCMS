@@ -60,7 +60,6 @@ export function initYourPlugin(registry: CMSRegistry): void {
   // Register your hook(s) here
   registry.register('render:head', injectYourFeature);
   // registry.register('render:body', modifyContent);
-  // registry.register('post:save', onPostSave);
 }
 
 // Your hook function

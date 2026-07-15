@@ -56,9 +56,6 @@ const myHookFunction: PluginHook = (payload) => {
 | `render:head` | `{ siteName, title, markup, meta }` | Inject meta tags, scripts, styles |
 | `render:body` | `{ bodyHtml, post, siteName }` | Modify page content |
 | `render:sitemap` | `{ baseUrl, posts }` | Customize sitemap.xml |
-| `post:save` | `{ post, db, author }` | React to post creation/update |
-| `post:delete` | `{ postId, db }` | React to post deletion |
-| `user:login` | `{ userId, session }` | React to user login |
 
 ---
 
@@ -247,14 +244,6 @@ import type { CMSRegistry } from '../cms/registry.js';
 import { initSEOPlugin } from './seo.js';
 import { initSitemapPlugin } from './sitemap.js';
 import { initAnalytics } from './analytics.js';        // ← Your import
-import { initNewsSEO } from './news-seo.js';           // ← Another import
-
-export function initAllPlugins(registry: CMSRegistry): void {
-  initSEOPlugin(registry);
-  initSitemapPlugin(registry);
-  initAnalytics(registry);        // ← Your init call
-  initNewsSEO(registry);          // ← Another init call
-}
 
 export const AVAILABLE_PLUGINS = [
   {
@@ -265,6 +254,7 @@ export const AVAILABLE_PLUGINS = [
     version: '1.0.0',
     author: 'PHCloud',
     hooks: ['render:head'],
+    init: initSEOPlugin,
   },
   {
     id: 'analytics',              // ← Your plugin entry
@@ -274,6 +264,7 @@ export const AVAILABLE_PLUGINS = [
     version: '1.0.0',
     author: 'Your Name',
     hooks: ['render:head'],
+    init: initAnalytics,
   },
 ];
 ```
@@ -415,9 +406,8 @@ Google Analytics 4 integration for PHCloud CMS.
 
 1. Download `src/analytics.ts`
 2. Copy to your PHCloud fork: `src/plugins/analytics.ts`
-3. Add import to `src/plugins/index.ts`
-4. Add init call to `initAllPlugins()`
-5. Commit + push to GitHub
+3. Add import + `AVAILABLE_PLUGINS` entry with `init: initAnalytics` to `src/plugins/index.ts`
+4. Commit + push to GitHub
 6. Enable in PHCloud admin: `/admin/plugins`
 
 ## Config

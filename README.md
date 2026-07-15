@@ -3,7 +3,7 @@
 **The world's lightest CMS** — runs entirely free on Cloudflare's free tier.
 
 ```
-~50KB bundle · Zero runtime dependencies · Free forever on Cloudflare
+~60KB bundle · Two dependencies (hono, marked) · Free forever on Cloudflare
 ```
 
 ---
@@ -243,22 +243,16 @@ Your post appears on the homepage immediately.
 
 ## Adding Images to Posts
 
-PHCloud has **no built-in image storage** — images are hosted externally via ImgBB (free, unlimited storage, 32MB max per image).
+PHCloud stores images **locally in your D1 database** — no external service, no API key, no credit card.
 
-ImgBB's upload API is **free** — just sign up for an account and generate an API key. The upload goes browser → ImgBB directly. Your Worker never touches the image bytes (zero server bandwidth).
+When you paste an image (Ctrl+V) into the post editor:
 
-### One-time Setup
+1. The image is **compressed to WebP** on your browser (~1200px max width, quality 0.7)
+2. The compressed image is uploaded as base64 to your Worker
+3. Your Worker stores it in the `images` D1 table and returns a URL like `/img/42`
+4. The Markdown `![](/img/42)` is inserted at your cursor position
 
-1. Go to [imgbb.com](https://imgbb.com) and create a free account
-2. Visit [api.imgbb.com](https://api.imgbb.com) and click **Generate API Key**
-3. Copy the generated key (looks like `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p`)
-4. In your admin panel, go to **Settings** → paste the key → **Save Settings**
-
-### Usage
-
-In the post/page editor, **paste an image** (Ctrl+V) directly into the content textarea. The image uploads to ImgBB in the background and the Markdown `![](https://i.ibb.co/xxx/image.jpg)` is inserted at your cursor position.
-
-> **How it works**: The upload goes browser → ImgBB directly. Your Worker never touches the image bytes — zero server bandwidth, zero storage cost.
+Images are served from D1 and cached in KV for 30 days. Browser cache is set to `immutable, max-age=31536000`.
 
 ---
 
@@ -292,14 +286,14 @@ npx tsc --noEmit
 |---|---|---|
 | **Admin Panel** | Dashboard, full CRUD for posts/pages/categories, navigation editor, settings |
 | **Markdown Editor** | Toolbar (bold, italic, headings, links, lists, code, preview) + paste-to-upload images |
-| **Image Upload** | Paste any image → auto-uploaded to ImgBB → Markdown inserted at cursor |
+| **Image Upload** | Paste any image → compressed to WebP client-side → stored in D1 → served via `/img/:id` |
 | **Pages** | Static pages (About, Contact, Privacy, etc.) alongside posts |
-| **Categories** | Organize content with categories, browse by `/category/:slug` |
+| **Tags** | Organize content with tags, browse by `/tag/:slug` |
 | **Navigation** | Custom header links, editable from admin |
 | **Search** | Full-text search at `/search?q=...` |
 | **RSS Feed** | Auto-generated `/feed.xml` |
-| **Theme System** | Switchable themes via CSS variables, create/share your own (see `THEMES.md`) |
-| **Dark Mode** | Built-in dark theme — select in Admin → Settings |
+| **Theme System** | Static theme file in `src/themes/default.ts`, reskin by editing (see `THEMES.md`) |
+| **Dark Mode** | Automatic via `prefers-color-scheme`, no toggle needed |
 | **Plugin System** | Hooks-based plugins in TypeScript, distributed via GitHub |
 | **Onboarding Wizard** | First-run setup via browser |
 | **SEO Built-in** | Meta tags, Open Graph, Twitter Cards |
@@ -323,7 +317,7 @@ npx tsc --noEmit
 | Auth | PBKDF2 (Web Crypto API) |
 | Entry Point | `src/index.ts` |
 
-**Zero external runtime dependencies** — only dependency is `hono`.
+**Two runtime dependencies** — `hono` (router) and `marked` (markdown renderer).
 
 ---
 
@@ -343,61 +337,20 @@ See [`PLUGIN_DEV.md`](./PLUGIN_DEV.md) and [`PLUGIN_STARTER.md`](./PLUGIN_STARTE
 
 ## Themes
 
-PHCloud supports custom themes. A theme controls the look of your public site — colors, fonts, layout, navigation placement, card design, footer, everything.
+PHCloud uses a **single static theme file** at `src/themes/default.ts`. Themes are not plugins — there's no runtime registry. The theme is compiled into the Worker.
 
-### Built-in themes
-
-| Theme | Description |
-|-------|-------------|
-| **Default** | Clean blog theme, orange accent, card-based post list, responsive |
-| **Dark Mode** | Dark background, lighter text, great for reading at night |
-
-Select a theme in **Admin → Settings → Public Site Theme**.
-
-### Creating a theme
-
-Themes follow the same fork-based workflow as plugins:
-
-```
-Developer → Creates theme → Adds to fork → Commits → Publishes on GitHub
-```
-
-**Quick start:**
-
-1. Copy `src/themes/example.ts` to `src/themes/my-theme.ts`
-2. Edit the CSS and template functions in your new file
-3. Run `npm run dev` — the build script auto-discovers any new theme; no need to edit `index.ts`
-4. Commit and push — Workers Builds deploys automatically
-5. Select it in **Admin → Settings → Public Site Theme**
-
-### Anatomy of a theme
-
-Each theme file exports a call to `registerTheme()` with:
+The theme exports CSS and a layout preset:
 
 ```typescript
-registerTheme({
-  id: 'my-theme',           // unique, no spaces
-  name: 'My Theme',         // display name in admin
-  author: 'Your Name',
-  description: 'What it does',
-  version: '1.0.0',
-  css: `:root { --accent: #3b82f6; }`,   // required
-  shell: myShell,           // optional — full page HTML
-  renderPost: myPostView,   // optional — single post
-  renderPostList: myList,   // optional — homepage listing
-  renderHomepage: myHome,   // optional — empty site
-});
+export const layout = 'centered'; // 'centered' | 'sidebar-left' | 'wide'
+export const css = `...`;
 ```
 
-- **`css`** — injected in `<style>` before all content. Use CSS variables for easy overrides.
-- **`shell`** — the entire page wrapper: `<!DOCTYPE html>...`. Override to change layout, nav position, footer.
-- **`renderPost`** — wraps a single post's `<h1>` title and `.post-content` body.
-- **`renderPostList`** — wraps the homepage post listing (called with the posts array).
-- **`renderHomepage`** — shown when there are no published posts.
+- **Light/dark mode** is automatic via `@media (prefers-color-scheme: dark)` — no toggle
+- **Reskin** by editing `src/themes/default.ts` — change palette colors in `:root`, commit, push
+- **Swap themes** by changing the import in `src/index.ts` to point at a different theme file
 
-Leave any function out and the default template is used.
-
-For detailed documentation, see [`THEMES.md`](./THEMES.md) — covers every template function, CSS variables, distribution, and full examples (sidebar layout, custom card design, shell override).
+See [`THEMES.md`](./THEMES.md) for full theming documentation.
 
 ---
 

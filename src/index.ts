@@ -7,9 +7,8 @@ import { hashPassword, verifyPassword } from "./cms/auth.js";
 import { renderMarkdown } from "./cms/markdown.js";
 import { saveImage, getImage } from "./cms/images.js";
 import { AVAILABLE_PLUGINS } from "./plugins/index.js";
-import { initSEOPlugin } from "./plugins/seo.js";
-import { initSitemapPlugin } from "./plugins/sitemap.js";
 import { getCookie, setCookie } from "hono/cookie";
+import { css as themeCss } from "./themes/default.js";
 import {
   adminShell,
   dashboardBody,
@@ -648,13 +647,10 @@ app.get("/admin/plugins", async (c) => {
 
 // ── Plugin bootstrap ──────────────────────────────────────────────
 
-function initActivePlugins(
-  registry: CMSRegistry,
-  active: Record<string, boolean>,
-): void {
-  if (active.seo) initSEOPlugin(registry);
-  if (active.sitemap) initSitemapPlugin(registry);
-  // new plugins: add an `if (active.<id>)` line here
+function initActivePlugins(registry: CMSRegistry, active: Record<string, boolean>): void {
+  for (const p of AVAILABLE_PLUGINS) {
+    if (active[p.id]) p.init(registry);
+  }
 }
 
 app.get("/health", (c) => c.json({ ok: true }));
@@ -1169,8 +1165,7 @@ export default app;
 //  Render helpers
 // ══════════════════════════════════════════════════════════════════
 
-const THEME_CSS =
-  "*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#1e293b;line-height:1.6}header{border-bottom:1px solid #e5e7eb;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto}header a{text-decoration:none}header .site-name{font-weight:700;font-size:1.1rem;color:#0f172a}header nav{display:flex;gap:1.25rem}header nav a{color:#64748b;font-size:0.9rem}header nav a:hover{color:#0f172a}main{max-width:720px;margin:2rem auto;padding:0 1.5rem}footer{text-align:center;padding:2rem;color:#94a3b8;font-size:0.8rem;max-width:960px;margin:0 auto}";
+const THEME_CSS = themeCss;
 
 function shellFull(
   siteName: string,

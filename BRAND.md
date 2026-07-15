@@ -55,7 +55,7 @@
 
 ### Lightweight Ethos
 ```
-✅ "12 files. 50KB bundle. Zero dependencies."
+✅ "~14 files. ~60KB bundle. Two dependencies (hono, marked)."
 ❌ "Enterprise-grade scalable architecture"
 ```
 
@@ -257,7 +257,7 @@ PHCloud CMS fork. Cloudflare will deploy it automatically.
 - Runtime: Cloudflare Workers (V8 isolates)
 - Database: D1 (globally distributed SQLite)
 - Cache: KV namespaces
-- Storage: R2 buckets
+- Storage: D1 (base64 images in images table)
 - Framework: Hono v4
 - Language: TypeScript
 

@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Hono v4.12 framework (NOT Astro)
 - TypeScript 7.0 with full type safety
 - Cloudflare D1 (SQLite) + KV for persistence
-- ~50KB bundle, zero runtime dependencies
+- ~60KB bundle, two runtime dependencies (hono, marked)
 
 ---
 
@@ -39,11 +39,15 @@ phcloud/
 │   │   ├── registry.ts       # Plugin hook system (CMSRegistry class)
 │   │   ├── middleware.ts     # Onboarding guard + cache helper
 │   │   ├── d1.ts             # D1 schema, migrations, queries
-│   │   └── auth.ts           # Password hashing (PBKDF2)
+│   │   ├── auth.ts           # Password hashing (PBKDF2)
+│   │   ├── markdown.ts       # marked v12 wrapper (link sanitizer)
+│   │   └── images.ts         # D1 image save/get/delete helpers
 │   ├── plugins/
-│   │   ├── index.ts          # Plugin auto-discovery hub
+│   │   ├── index.ts          # Plugin auto-discovery hub (AVAILABLE_PLUGINS)
 │   │   ├── seo.ts            # SEO plugin (meta tags, Open Graph)
 │   │   └── sitemap.ts        # XML sitemap generator
+│   ├── themes/
+│   │   └── default.ts        # Static theme module (css + layout)
 │   ├── admin.ts              # Admin panel HTML rendering
 │   └── index.ts              # Main Hono router (all routes)
 └── package.json              # Dependencies + scripts
@@ -89,17 +93,26 @@ All routes in `src/index.ts` use Hono router:
 | Route | Purpose |
 |-------|---------|
 | `GET /` | Public homepage |
-| `GET /:slug` | Single post view |
+| `GET /:slug` | Single post/view page |
+| `GET /img/:id` | Serve image from D1 |
+| `GET /sitemap.xml` | XML sitemap |
+| `GET /feed.xml` | RSS feed |
+| `GET /search` | Search posts |
 | `GET /admin` | Admin dashboard |
 | `GET /admin/login` | Login form |
+| `GET /admin/posts` | Post list admin |
+| `GET /admin/new` | New post form |
+| `GET /admin/edit/:id` | Edit post form |
+| `GET /admin/plugins` | Plugin manager |
+| `GET /admin/settings` | Settings form |
 | `POST /api/auth/login` | Session auth |
+| `POST /api/auth/logout` | Session destroy |
 | `POST /api/install` | Initial setup (install wizard) |
-| `POST /api/admin/posts` | Create post |
-| `GET /api/admin/posts` | List posts |
-| `PATCH /api/admin/posts/:id` | Update post |
-| `DELETE /api/admin/posts/:id` | Delete post |
+| `POST /api/preview` | Markdown preview (admin) |
+| `GET/POST/DELETE /api/admin/posts` | Post CRUD |
 | `PATCH /api/admin/plugins/:id` | Toggle plugin |
-| `GET /sitemap.xml` | XML sitemap |
+| `GET/PATCH /api/admin/settings` | Settings read/write |
+| `POST /api/admin/images` | Upload image (base64 data URL) |
 
 ### Admin Panel
 
@@ -107,6 +120,7 @@ All routes in `src/index.ts` use Hono router:
 - `dashboardBody()` — Post list, stats
 - `editBody()` — Post editor form
 - `pluginsBody()` — Plugin manager UI
+- `settingsBody()` — Settings form (site name, SEO description, logo)
 
 ### Database Schema
 
@@ -117,6 +131,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, content TEXT NOT NULL, excerpt TEXT, published INTEGER DEFAULT 0 NOT NULL, created_at TEXT DEFAULT (datetime('now')) NOT NULL, updated_at TEXT DEFAULT (datetime('now')) NOT NULL);
 CREATE TABLE plugins (id TEXT PRIMARY KEY, active INTEGER DEFAULT 0 NOT NULL);
 CREATE TABLE admins (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE DEFAULT 'admin', password_hash TEXT NOT NULL);
+CREATE TABLE images (id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL, mime TEXT NOT NULL, data BLOB NOT NULL, size INTEGER NOT NULL, created_at TEXT DEFAULT (datetime('now')) NOT NULL);
 ```
 
 ---
@@ -130,6 +145,8 @@ CREATE TABLE admins (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NUL
 5. **Empty responses use `c.body(null, 204)`** (not empty string)
 6. **DB queries use explicit types:** `bind().first<DbPost>()`
 7. **Admin routes must be registered before the `/:slug?` catch-all**
+8. **Images use `![](/img/<id>)` markdown** — D1 base64 storage, served via `/img/:id` with immutable cache headers
+9. **Markdown rendered by `marked` via `cms/markdown.ts`** — don't hand-roll a parser
 
 ---
 
@@ -148,6 +165,12 @@ CREATE TABLE admins (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NUL
 3. Pass `c.env` for D1/KV bindings
 4. Admin routes go BEFORE the `/:slug?` catch-all
 
+### Adding a Plugin to AVAILABLE_PLUGINS
+
+1. Create plugin file in `src/plugins/` with an `init` function
+2. Import it in `src/plugins/index.ts` and add an entry to `AVAILABLE_PLUGINS` with `init: yourInitFn`
+3. `initActivePlugins` in `src/index.ts` auto-discovers it
+
 ### Testing Locally
 
 ```bash
@@ -161,14 +184,18 @@ curl http://localhost:8787/sitemap.xml
 
 ---
 
-## Theme/Plugin Distribution
+## Plugin Distribution
 
 **GitHub IS the marketplace** — no central repo, no uploads:
 
-1. Developer creates plugin/theme → publishes on their GitHub
+1. Developer creates plugin → publishes on their GitHub
 2. Site owner downloads `.ts` file → copies to their fork
-3. Site owner registers in `src/plugins/index.ts`
+3. Site owner registers in `src/plugins/index.ts` (adds import + `AVAILABLE_PLUGINS` entry)
 4. Enable via `/admin/plugins`
+
+## Theming
+
+See `THEMES.md` and `src/themes/default.ts`. Themes are static source files, not plugins. Reskin by editing `src/themes/default.ts` or importing a different theme file.
 
 ---
 
