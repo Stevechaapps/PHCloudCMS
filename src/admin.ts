@@ -57,7 +57,7 @@ export function adminShell(title: string, bodyHtml: string): string {
 <a href="/admin/pages">Pages</a>
 <a href="/admin/new">New Post</a>
 <a href="/admin/plugins">Plugins</a>
-<a href="/admin/categories">Categories</a>
+<a href="/admin/tags">Tags</a>
 <a href="/admin/nav">Navigation</a>
 <a href="/admin/settings">Settings</a>
 <a href="/" style="margin-left:1rem">View Site</a>
@@ -70,7 +70,7 @@ export function adminShell(title: string, bodyHtml: string): string {
 <a href="/admin/posts">All Posts</a>
 <a href="/admin/pages">Pages</a>
 <a href="/admin/new">New Post</a>
-<a href="/admin/categories">Categories</a>
+<a href="/admin/tags">Tags</a>
 <a href="/admin/nav">Navigation</a>
 <a href="/admin/plugins">Plugins</a>
 <a href="/admin/settings">Settings</a>
@@ -188,8 +188,8 @@ export function newPostBody(): string {
 <div class="preview-box" id="preview"></div>
 </div>
 <div class="form-group">
-<label>Categories</label>
-<div id="catCheckboxes" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem"></div>
+<label>Tags</label>
+<div id="tagCheckboxes" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem"></div>
 </div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" /> Publish immediately</label></div>
 <div class="form-group"><label><input type="checkbox" id="schedule" onchange="scheduleToggle()" /> Schedule for later</label>
@@ -216,12 +216,12 @@ var slugEl=document.getElementById('slug');
 titleEl.addEventListener('input',function(){
 slugEl.value=titleEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 });
-fetch('/api/admin/categories').then(function(r){return r.json()}).then(function(cats){
+fetch('/api/admin/tags').then(function(r){return r.json()}).then(function(cats){
 var html='';
 for(var i=0;i<cats.length;i++){
-html+='<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer"><input type="checkbox" value="'+cats[i].id+'" class="cat-cb" /> '+cats[i].name+'</label>'}
-document.getElementById('catCheckboxes').innerHTML=html||'<span style="color:#94a3b8;font-size:0.85rem">No categories. <a href="/admin/categories">Manage categories</a>.</span>'});
-function getCatIds(){var ids=[];[].forEach.call(document.querySelectorAll('.cat-cb:checked'),function(cb){ids.push(Number(cb.value))});return ids}
+html+='<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer"><input type="checkbox" value="'+cats[i].id+'" class="tag-cb" /> '+cats[i].name+'</label>'}
+document.getElementById('catCheckboxes').innerHTML=html||'<span style="color:#94a3b8;font-size:0.85rem">No tags yet. <a href="/admin/tags">Manage tags</a>.</span>'});
+function getTagIds(){var ids=[];[].forEach.call(document.querySelectorAll('.tag-cb:checked'),function(cb){ids.push(Number(cb.value))});return ids}
 document.getElementById('form').addEventListener('submit',function(e){
 e.preventDefault();
 var status=document.getElementById('status');
@@ -238,7 +238,7 @@ content:String(fd.get('content')||''),
 excerpt:String(fd.get('excerpt')||''),
 published:document.getElementById('published').checked,
 publish_at:document.getElementById('publish_at').value||null,
-category_ids:getCatIds()
+tag_ids:getTagIds()
 })}).then(function(res){
 if(res.ok){
 res.json().then(function(p){
@@ -344,8 +344,8 @@ export function editBody(post: {
 <div class="preview-box" id="preview"></div>
 </div>
 <div class="form-group">
-<label>Categories</label>
-<div id="catCheckboxes" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem"></div>
+<label>Tags</label>
+<div id="tagCheckboxes" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem"></div>
 </div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" ${checked} /> Published</label></div>
 <div class="form-group"><label><input type="checkbox" id="schedule" onchange="scheduleToggle()" ${scheduleChecked} /> Schedule for later</label>
@@ -374,17 +374,17 @@ var slugEl=document.getElementById('slug');
 titleEl.addEventListener('input',function(){
 slugEl.value=titleEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 });
-function getCatIds(){var ids=[];[].forEach.call(document.querySelectorAll('.cat-cb:checked'),function(cb){ids.push(Number(cb.value))});return ids}
-var postCatReq=fetch('/api/admin/posts/${id}/categories').then(function(r){return r.json()});
-var allCatReq=fetch('/api/admin/categories').then(function(r){return r.json()});
+function getTagIds(){var ids=[];[].forEach.call(document.querySelectorAll('.tag-cb:checked'),function(cb){ids.push(Number(cb.value))});return ids}
+var postCatReq=fetch('/api/admin/posts/${id}/tags').then(function(r){return r.json()});
+var allCatReq=fetch('/api/admin/tags').then(function(r){return r.json()});
 Promise.all([postCatReq,allCatReq]).then(function(results){
 var postCatIds=results[0].map(function(c){return c.id});
 var cats=results[1];
 var html='';
 for(var i=0;i<cats.length;i++){
 var checked=postCatIds.indexOf(cats[i].id)!==-1?' checked':'';
-html+='<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer"><input type="checkbox" value="'+cats[i].id+'" class="cat-cb"'+checked+' /> '+cats[i].name+'</label>'}
-document.getElementById('catCheckboxes').innerHTML=html||'<span style="color:#94a3b8;font-size:0.85rem">No categories.</span>'});
+html+='<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer"><input type="checkbox" value="'+cats[i].id+'" class="tag-cb"'+checked+' /> '+cats[i].name+'</label>'}
+document.getElementById('catCheckboxes').innerHTML=html||'<span style="color:#94a3b8;font-size:0.85rem">No tags yet.</span>'});
 
 document.getElementById('form').addEventListener('submit',function(e){
 e.preventDefault();
@@ -402,7 +402,7 @@ content:String(fd.get('content')||''),
 excerpt:String(fd.get('excerpt')||''),
 published:document.getElementById('published').checked,
 publish_at:document.getElementById('publish_at').value||null,
-category_ids:getCatIds()
+tag_ids:getTagIds()
 })}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Updated!'}
 else{status.style.color='#dc2626';status.textContent='Error updating post'}})});
@@ -748,19 +748,19 @@ else{status.style.color='#dc2626';status.textContent='Error updating page'}})});
 </script>`;
 }
 
-// ── Categories editor ──────────────────────────────────────────────
+// ── Tags editor ────────────────────────────────────────────────────
 
-export function categoriesBody(): string {
-  return `<h2 style="margin-bottom:1.5rem">Categories</h2>
-<form id="catForm" style="display:flex;gap:0.75rem;margin-bottom:2rem;max-width:500px">
-<div style="flex:1"><label for="name">Category name</label><input type="text" id="name" required /></div>
+export function tagsBody(): string {
+  return `<h2 style="margin-bottom:1.5rem">Tags</h2>
+<form id="tagForm" style="display:flex;gap:0.75rem;margin-bottom:2rem;max-width:500px">
+<div style="flex:1"><label for="name">Tag name</label><input type="text" id="name" required /></div>
 <div style="flex:1"><label for="slug">Slug</label><input type="text" id="slug" required placeholder="auto" /></div>
 <div style="display:flex;align-items:flex-end"><button type="submit" class="btn btn-primary">Add</button></div>
 </form>
 <div id="status" style="margin-bottom:1rem;font-size:0.9rem"></div>
 <div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden">
 <table><thead><tr><th>Name</th><th>Slug</th><th></th></tr></thead>
-<tbody id="cats"></tbody>
+<tbody id="tags"></tbody>
 </table></div>
 <script>
 var nameEl=document.getElementById('name');
@@ -768,22 +768,22 @@ var slugEl=document.getElementById('slug');
 nameEl.addEventListener('input',function(){
 slugEl.value=nameEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 });
-function load(){fetch('/api/admin/categories').then(function(r){return r.json()}).then(function(cats){
+function load(){fetch('/api/admin/tags').then(function(r){return r.json()}).then(function(tags){
 function ea(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-var tbody=document.getElementById('cats');
-if(!cats.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b">No categories.</td></tr>';return}
-tbody.innerHTML=cats.map(function(c){return '<tr>'
-+'<td><strong>'+ea(c.name)+'</strong></td>'
-+'<td style="color:#64748b">'+ea(c.slug)+'</td>'
-+'<td><button class="btn btn-sm btn-danger" onclick="del('+c.id+')">Delete</button></td></tr>'}).join('')})}
-document.getElementById('catForm').addEventListener('submit',function(e){
+var tbody=document.getElementById('tags');
+if(!tags.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b">No tags yet.</td></tr>';return}
+tbody.innerHTML=tags.map(function(t){return '<tr>'
++'<td><strong>'+ea(t.name)+'</strong></td>'
++'<td style="color:#64748b">'+ea(t.slug)+'</td>'
++'<td><button class="btn btn-sm btn-danger" onclick="del('+t.id+')">Delete</button></td></tr>'}).join('')})}
+document.getElementById('tagForm').addEventListener('submit',function(e){
 e.preventDefault();
 var status=document.getElementById('status');
 var slug=slugEl.value||nameEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-fetch('/api/admin/categories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameEl.value,slug:slug})}).then(function(res){
+fetch('/api/admin/tags',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameEl.value,slug:slug})}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Added!';nameEl.value='';slugEl.value='';load()}
-else{status.style.color='#dc2626';status.textContent='Error adding category'}})});
-function del(id){if(!confirm('Delete category?'))return;fetch('/api/admin/categories/'+id,{method:'DELETE'}).then(function(){load()})}
+else{status.style.color='#dc2626';status.textContent='Error adding tag'}})});
+function del(id){if(!confirm('Delete tag?'))return;fetch('/api/admin/tags/'+id,{method:'DELETE'}).then(function(){load()})}
 load();
 </script>`;
 }

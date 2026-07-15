@@ -20,7 +20,7 @@ import {
   pagesBody,
   newPageBody,
   editPageBody,
-  categoriesBody,
+  tagsBody,
   navBody,
   settingsBody,
 } from "./admin.js";
@@ -148,7 +148,7 @@ app.post("/api/admin/posts", async (c) => {
     excerpt?: string;
     published?: boolean;
     publish_at?: string | null;
-    category_ids?: number[];
+    tag_ids?: number[];
   }>();
   const db = c.env.DB;
   const now = new Date().toISOString();
@@ -175,13 +175,13 @@ app.post("/api/admin/posts", async (c) => {
     .run();
 
   const postId = result.meta.last_row_id;
-  if (body.category_ids?.length) {
-    for (const cid of body.category_ids) {
+  if (body.tag_ids?.length) {
+    for (const tid of body.tag_ids) {
       await db
         .prepare(
-          "INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)",
+          "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)",
         )
-        .bind(postId, cid)
+        .bind(postId, tid)
         .run();
     }
   }
@@ -235,7 +235,7 @@ app.patch("/api/admin/posts/:id", async (c) => {
     excerpt?: string;
     published?: boolean;
     publish_at?: string | null;
-    category_ids?: number[];
+    tag_ids?: number[];
   }>();
   const now = new Date().toISOString();
   const publishAt = body.publish_at || null;
@@ -260,15 +260,15 @@ app.patch("/api/admin/posts/:id", async (c) => {
     )
     .run();
 
-  if (body.category_ids) {
-    await c.env.DB.prepare("DELETE FROM post_categories WHERE post_id = ?")
+  if (body.tag_ids) {
+    await c.env.DB.prepare("DELETE FROM post_tags WHERE post_id = ?")
       .bind(id)
       .run();
-    for (const cid of body.category_ids) {
+    for (const tid of body.tag_ids) {
       await c.env.DB.prepare(
-        "INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)",
       )
-        .bind(id, cid)
+        .bind(id, tid)
         .run();
     }
   }
@@ -523,10 +523,10 @@ app.get("/admin/pages/edit/:id", async (c) => {
   return c.html(adminShell("Edit Page", editPageBody(page)));
 });
 
-app.get("/admin/categories", async (c) => {
+app.get("/admin/tags", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  return c.html(adminShell("Categories", categoriesBody()));
+  return c.html(adminShell("Tags", tagsBody()));
 });
 
 app.get("/admin/nav", async (c) => {
@@ -740,26 +740,26 @@ app.get("/search", async (c) => {
   );
 });
 
-// ── Category pages ─────────────────────────────────────────────────
+// ── Tag pages ──────────────────────────────────────────────────────
 
-app.get("/category/:slug", async (c) => {
+app.get("/tag/:slug", async (c) => {
   const db = c.env.DB;
-  const catSlug = c.req.param("slug");
-  const cat = await db
-    .prepare("SELECT id, name FROM categories WHERE slug = ?")
-    .bind(catSlug)
+  const tagSlug = c.req.param("slug");
+  const tag = await db
+    .prepare("SELECT id, name FROM tags WHERE slug = ?")
+    .bind(tagSlug)
     .first<{ id: number; name: string }>();
-  if (!cat)
+  if (!tag)
     return c.html(
-      '<h1>Category not found</h1><p><a href="/">Go home</a></p>',
+      '<h1>Tag not found</h1><p><a href="/">Go home</a></p>',
       404,
     );
 
   const rows = await db
     .prepare(
-      "SELECT p.slug, p.title, p.excerpt, p.updated_at FROM posts p JOIN post_categories pc ON p.id = pc.post_id WHERE pc.category_id = ? AND p.published = 1 ORDER BY p.updated_at DESC",
+      "SELECT p.slug, p.title, p.excerpt, p.updated_at FROM posts p JOIN post_tags pt ON p.id = pt.post_id WHERE pt.tag_id = ? AND p.published = 1 ORDER BY p.updated_at DESC",
     )
-    .bind(cat.id)
+    .bind(tag.id)
     .all<{
       slug: string;
       title: string;
@@ -772,19 +772,19 @@ app.get("/category/:slug", async (c) => {
   });
   const bodyHtml =
     '<h1 style="margin-bottom:1rem">' +
-    esc(cat.name) +
+    esc(tag.name) +
     "</h1>" +
     (rows.results.length
       ? renderPostList(rows.results, "")
-      : '<p style="color:#64748b">No posts in this category.</p>');
+      : '<p style="color:#64748b">No posts with this tag.</p>');
   const registry = new CMSRegistry();
   const headPayload = await registry.executePipeline("render:head", {
     siteName,
-    title: cat.name + " · " + siteName,
+    title: tag.name + " · " + siteName,
     description: "",
     markup: "",
     meta: {
-      title: cat.name + " · " + siteName,
+      title: tag.name + " · " + siteName,
       description: "",
       url: new URL(c.req.url).href,
     },
@@ -794,18 +794,18 @@ app.get("/category/:slug", async (c) => {
   );
 });
 
-// ── Admin: Categories API ──────────────────────────────────────────
+// ── Admin: Tags API ────────────────────────────────────────────────
 
-app.get("/api/admin/categories", async (c) => {
+app.get("/api/admin/tags", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
   const rows = await c.env.DB.prepare(
-    "SELECT id, name, slug FROM categories ORDER BY name",
+    "SELECT id, name, slug FROM tags ORDER BY name",
   ).all<{ id: number; name: string; slug: string }>();
   return c.json(rows.results);
 });
 
-app.post("/api/admin/categories", async (c) => {
+app.post("/api/admin/tags", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
   const { name, slug } = await c.req.json<{ name?: string; slug?: string }>();
@@ -814,32 +814,29 @@ app.post("/api/admin/categories", async (c) => {
       "Content-Type": "application/json",
     });
   await c.env.DB.prepare(
-    "INSERT OR IGNORE INTO categories (name, slug) VALUES (?, ?)",
+    "INSERT OR IGNORE INTO tags (name, slug) VALUES (?, ?)",
   )
     .bind(name, slug)
     .run();
   return c.json({ ok: true });
 });
 
-app.delete("/api/admin/categories/:id", async (c) => {
+app.delete("/api/admin/tags/:id", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  await c.env.DB.prepare("DELETE FROM post_categories WHERE category_id = ?")
-    .bind(c.req.param("id"))
-    .run();
-  await c.env.DB.prepare("DELETE FROM categories WHERE id = ?")
-    .bind(c.req.param("id"))
-    .run();
+  const id = c.req.param("id");
+  await c.env.DB.prepare("DELETE FROM post_tags WHERE tag_id = ?").bind(id).run();
+  await c.env.DB.prepare("DELETE FROM tags WHERE id = ?").bind(id).run();
   return c.json({ ok: true });
 });
 
-// ── Admin: Post categories API ─────────────────────────────────────
+// ── Admin: Post tags API ───────────────────────────────────────────
 
-app.get("/api/admin/posts/:id/categories", async (c) => {
+app.get("/api/admin/posts/:id/tags", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
   const rows = await c.env.DB.prepare(
-    "SELECT c.id, c.name FROM categories c JOIN post_categories pc ON c.id = pc.category_id WHERE pc.post_id = ?",
+    "SELECT t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = ?",
   )
     .bind(c.req.param("id"))
     .all<{ id: number; name: string }>();
@@ -1063,22 +1060,22 @@ app.get("/:slug?", async (c) => {
         renderMarkdown(post.content) +
         "</div>";
     } else {
-      const catRows = await db
+      const tagRows = await db
         .prepare(
-          "SELECT c.name FROM categories c JOIN post_categories pc ON c.id = pc.category_id WHERE pc.post_id = (SELECT id FROM posts WHERE slug = ?)",
+          "SELECT t.name, t.slug FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = (SELECT id FROM posts WHERE slug = ?)",
         )
         .bind(slug)
-        .all<{ name: string }>();
-      const cats = catRows.results.map((c) => c.name);
-      const catsHtml = cats.length
+        .all<{ name: string; slug: string }>();
+      const tags = tagRows.results;
+      const tagsHtml = tags.length
         ? '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:1rem">' +
-          cats
+          tags
             .map(
-              (n) =>
-                '<a href="/category/' +
-                esc(n.toLowerCase().replace(/\s+/g, "-")) +
+              (t) =>
+                '<a href="/tag/' +
+                esc(t.slug) +
                 '" style="color:#3b82f6;text-decoration:none">' +
-                esc(n) +
+                esc(t.name) +
                 "</a>",
             )
             .join(" · ") +
@@ -1087,7 +1084,7 @@ app.get("/:slug?", async (c) => {
       bodyHtml =
         '<p style="margin-bottom:2rem"><a href="/" style="color:#3b82f6;text-decoration:none">← Back to home</a></p>' +
         renderPost(post) +
-        catsHtml;
+        tagsHtml;
     }
 
     const origin = new URL(c.req.url).origin;

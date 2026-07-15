@@ -36,15 +36,15 @@ export const SCHEMA_STATEMENTS: string[] = [
     username TEXT    NOT NULL UNIQUE DEFAULT 'admin',
     password_hash TEXT NOT NULL
   )`,
-  `CREATE TABLE IF NOT EXISTS categories (
-    id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL UNIQUE
+  `CREATE TABLE IF NOT EXISTS tags (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    name  TEXT NOT NULL,
+    slug  TEXT NOT NULL UNIQUE
   )`,
-  `CREATE TABLE IF NOT EXISTS post_categories (
-    post_id     INTEGER NOT NULL,
-    category_id INTEGER NOT NULL,
-    PRIMARY KEY (post_id, category_id)
+  `CREATE TABLE IF NOT EXISTS post_tags (
+    post_id INTEGER NOT NULL,
+    tag_id  INTEGER NOT NULL,
+    PRIMARY KEY (post_id, tag_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_posts_slug      ON posts(slug)`,
   `CREATE INDEX IF NOT EXISTS idx_posts_published ON posts(published)`,
