@@ -21,10 +21,17 @@ const styles = [
   '.badge{display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:500}',
   '.badge-pub{background:#dcfce7;color:#166534}',
   '.badge-draft{background:#fef3c7;color:#92400e}',
+  '.badge-info{background:#dbeafe;color:#1e40af}',
   '.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.45rem 0.9rem;border-radius:4px;font-size:0.8rem;text-decoration:none;cursor:pointer;border:none;font-weight:500}',
   '.btn-primary{background:#0f172a;color:white}',
   '.btn-sm{padding:0.3rem 0.6rem;border-radius:4px;border:1px solid #e5e7eb;background:white;cursor:pointer;font-size:0.8rem}',
   '.btn-danger{color:#dc2626}',
+  '.toolbar{display:flex;gap:2px;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-bottom:none;border-radius:5px 5px 0 0;flex-wrap:wrap;margin-bottom:0}',
+  '.toolbar button{background:none;border:none;padding:0.3rem 0.55rem;border-radius:3px;cursor:pointer;font-size:0.8rem;color:#475569;font-weight:500}',
+  '.toolbar button:hover{background:#e2e8f0;color:#1e293b}',
+  '.toolbar .sep{width:1px;background:#e2e8f0;margin:0 0.25rem}',
+  '.preview-box{background:white;border:1px solid #e2e8f0;border-radius:0 0 5px 5px;padding:1rem;min-height:200px;font-size:0.9rem;line-height:1.7;display:none;overflow-y:auto}',
+  '.preview-box h1{font-size:1.4rem;margin:0.5rem 0}.preview-box h2{font-size:1.2rem;margin:0.4rem 0}.preview-box h3{font-size:1.05rem;margin:0.3rem 0}.preview-box p{margin:0.5rem 0}.preview-box code{background:#f1f5f9;padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em}.preview-box img{max-width:100%;border-radius:4px;margin:0.5rem 0}',
   '.form-group{margin-bottom:1.25rem}',
   'label{display:block;font-weight:500;margin-bottom:0.4rem;font-size:0.9rem}',
   'input[type="text"],textarea{width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem;font-family:inherit}',
@@ -161,7 +168,25 @@ return `<h2 style="margin-bottom:1.5rem">New Post</h2>
 <div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required /></div>
 </div>
 <div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" /></div>
-<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" name="content" required></textarea></div>
+<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label>
+<div class="toolbar">
+<button type="button" onclick="mdWrap(event,'**','bold')" title="Bold"><strong>B</strong></button>
+<button type="button" onclick="mdWrap(event,'*','italic')" title="Italic"><em>I</em></button>
+<span class="sep"></span>
+<button type="button" onclick="mdLine(event,'## ')" title="Heading 2">H2</button>
+<button type="button" onclick="mdLine(event,'### ')" title="Heading 3">H3</button>
+<span class="sep"></span>
+<button type="button" onclick="mdLink(event)" title="Link">Link</button>
+<button type="button" onclick="mdImage(event)" title="Image">Img</button>
+<span class="sep"></span>
+<button type="button" onclick="mdLine(event,'> ')" title="Blockquote">Quote</button>
+<button type="button" onclick="mdLine(event,'- ')" title="List item">List</button>
+<span class="sep"></span>
+<button type="button" onclick="togglePreview(event)" title="Preview">Preview</button>
+</div>
+<textarea id="content" name="content" required></textarea>
+<div class="preview-box" id="preview"></div>
+</div>
 <div class="form-group">
 <label>Categories</label>
 <div id="catCheckboxes" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem"></div>
@@ -177,6 +202,14 @@ return `<h2 style="margin-bottom:1.5rem">New Post</h2>
 </form>
 <script>
 function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}
+</script>
+<script>
+function mdWrap(e,c,ph){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||ph||'text';ta.value=val.substring(0,s)+c+sel+c+val.substring(en);ta.selectionStart=s+c.length;ta.selectionEnd=s+c.length+sel.length;ta.focus()}
+function mdLine(e,p){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart;var ls=ta.value.lastIndexOf(String.fromCharCode(10),s-1)+1;ta.value=ta.value.substring(0,ls)+p+ta.value.substring(ls);ta.selectionStart=ta.selectionEnd=s+p.length;ta.focus()}
+function mdLink(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'link text';ta.value=val.substring(0,s)+'['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+2;ta.selectionEnd=s+sel.length+2+3;ta.focus()}
+function mdImage(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'alt';ta.value=val.substring(0,s)+'!['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+3;ta.selectionEnd=s+sel.length+3+3;ta.focus()}
+function togglePreview(e){e.preventDefault();var ta=document.getElementById('content'),pre=document.getElementById('preview');if(pre.style.display=='block'){pre.style.display='none';ta.style.display='block';return}ta.style.display='none';pre.style.display='block';pre.innerHTML=renderMd(ta.value)}
+function renderMd(t){return t.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/^###\s+(.+)$/gm,'<h3>$1</h3>').replace(/^##\s+(.+)$/gm,'<h2>$1</h2>').replace(/^#\s+(.+)$/gm,'<h1>$1</h1>').replace(/^>\s+(.+)$/gm,'<blockquote>$1</blockquote>').replace(/^---$/gm,'<hr>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/\u0060(.+?)\u0060/g,'<code>$1</code>').replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">').replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2">$1</a>').split('\n\n').map(function(b){return b.trim()?'<p>'+b.replace(/\n/g,'<br>')+'</p>':''}).join('')}
 </script>
 <script>
 var titleEl=document.getElementById('title');
@@ -274,7 +307,25 @@ return `<h2 style="margin-bottom:1.5rem">Edit Post</h2>
 <div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(post.slug)}" /></div>
 </div>
 <div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" value="${escAttr(String(post.excerpt ?? ''))}" /></div>
- <div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" name="content" required>${escHtml(post.content)}</textarea></div>
+ <div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label>
+<div class="toolbar">
+<button type="button" onclick="mdWrap(event,'**','bold')" title="Bold"><strong>B</strong></button>
+<button type="button" onclick="mdWrap(event,'*','italic')" title="Italic"><em>I</em></button>
+<span class="sep"></span>
+<button type="button" onclick="mdLine(event,'## ')" title="Heading 2">H2</button>
+<button type="button" onclick="mdLine(event,'### ')" title="Heading 3">H3</button>
+<span class="sep"></span>
+<button type="button" onclick="mdLink(event)" title="Link">Link</button>
+<button type="button" onclick="mdImage(event)" title="Image">Img</button>
+<span class="sep"></span>
+<button type="button" onclick="mdLine(event,'> ')" title="Blockquote">Quote</button>
+<button type="button" onclick="mdLine(event,'- ')" title="List item">List</button>
+<span class="sep"></span>
+<button type="button" onclick="togglePreview(event)" title="Preview">Preview</button>
+</div>
+<textarea id="content" name="content" required>${escHtml(post.content)}</textarea>
+<div class="preview-box" id="preview"></div>
+</div>
 <div class="form-group">
 <label>Categories</label>
 <div id="catCheckboxes" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem"></div>
@@ -292,6 +343,14 @@ ${previewLink ? '<div style="font-size:0.85rem;margin-bottom:0.75rem"><a href="'
 </form>
 <script>
 function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}
+</script>
+<script>
+function mdWrap(e,c,ph){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||ph||'text';ta.value=val.substring(0,s)+c+sel+c+val.substring(en);ta.selectionStart=s+c.length;ta.selectionEnd=s+c.length+sel.length;ta.focus()}
+function mdLine(e,p){e.preventDefault();var ta=document.getElementById('content');var ls=ta.value.lastIndexOf(String.fromCharCode(10),ta.selectionStart-1)+1;ta.value=ta.value.substring(0,ls)+p+ta.value.substring(ls);ta.selectionStart=ta.selectionEnd=ta.selectionStart+p.length;ta.focus()}
+function mdLink(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'link text';ta.value=val.substring(0,s)+'['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+2;ta.selectionEnd=s+sel.length+2+3;ta.focus()}
+function mdImage(e){e.preventDefault();var ta=document.getElementById('content'),s=ta.selectionStart,en=ta.selectionEnd,val=ta.value,sel=val.substring(s,en)||'alt';ta.value=val.substring(0,s)+'!['+sel+'](url)'+val.substring(en);ta.selectionStart=s+sel.length+3;ta.selectionEnd=s+sel.length+3+3;ta.focus()}
+function togglePreview(e){e.preventDefault();var ta=document.getElementById('content'),pre=document.getElementById('preview');if(pre.style.display=='block'){pre.style.display='none';ta.style.display='block';return}ta.style.display='none';pre.style.display='block';pre.innerHTML=renderMd(ta.value)}
+function renderMd(t){return t.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/^###\s+(.+)$/gm,'<h3>$1</h3>').replace(/^##\s+(.+)$/gm,'<h2>$1</h2>').replace(/^#\s+(.+)$/gm,'<h1>$1</h1>').replace(/^>\s+(.+)$/gm,'<blockquote>$1</blockquote>').replace(/^---$/gm,'<hr>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/\u0060(.+?)\u0060/g,'<code>$1</code>').replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">').replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2">$1</a>').split('\n\n').map(function(b){return b.trim()?'<p>'+b.replace(/\n/g,'<br>')+'</p>':''}).join('')}
 </script>
 <script>
 var titleEl=document.getElementById('title');
