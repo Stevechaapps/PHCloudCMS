@@ -365,31 +365,12 @@ app.get('/admin/nav', async (c) => {
 app.get('/admin/settings', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const imgbbApiKey = await getSetting(c.env.DB, 'imgbb_api_key') ?? '';
-  return c.html(adminShell('Settings', settingsBody({ imgbb_api_key: imgbbApiKey })));
+  return c.html(adminShell('Settings', settingsBody()));
 });
 
 app.get('/admin/login', (c) => {
   if (getCookie(c, SESSION_COOKIE)) return c.redirect('/admin');
   return c.html(loginForm());
-});
-
-// ── Settings API ──────────────────────────────────────────────────
-
-app.get('/api/admin/settings', async (c) => {
-  const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
-  const imgbbApiKey = await getSetting(c.env.DB, 'imgbb_api_key') ?? '';
-  return c.json({ imgbb_api_key: imgbbApiKey });
-});
-
-app.post('/api/admin/settings', async (c) => {
-  const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
-  const body = await c.req.json<{ imgbb_api_key?: string }>();
-  await c.env.DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('imgbb_api_key', ?)").bind(body.imgbb_api_key ?? '').run();
-  await c.env.CACHE.delete('cms:config');
-  return c.json({ ok: true });
 });
 
 // ── Plugin manager API ─────────────────────────────────────────────
@@ -409,35 +390,20 @@ app.patch('/api/admin/plugins/:id', async (c) => {
 app.post('/api/upload', async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const apiKey = await getSetting(c.env.DB, 'imgbb_api_key') || (c.env as Record<string, unknown>).IMGBB_API_KEY as string | undefined;
-  if (!apiKey) return c.json({ error: 'ImgBB API key not configured' }, 400);
   const formData = await c.req.raw.formData();
   const file = formData.get('image') as File | null;
   if (!file) return c.json({ error: 'No image file provided' }, 400);
   const buf = await file.arrayBuffer();
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 8192) {
-    binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)));
-  }
-  const imgbbForm = new FormData();
-  imgbbForm.append('key', apiKey);
-  imgbbForm.append('image', btoa(binary));
-  const res = await fetch('https://api.imgbb.com/1/upload', {
+  const catForm = new FormData();
+  catForm.append('reqtype', 'fileupload');
+  catForm.append('fileToUpload', new File([buf], file.name || 'image.png', { type: file.type || 'image/png' }));
+  const res = await fetch('https://catbox.moe/user/api.php', {
     method: 'POST',
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' },
-    body: imgbbForm
+    body: catForm
   });
-  const text = await res.text();
-  let data: Record<string, unknown>;
-  try { data = JSON.parse(text) } catch { return c.json({ error: text }, 500); }
-  if (data.success) {
-    const d = data.data;
-    if (d && typeof d === 'object' && 'url' in d) {
-      return c.json({ url: (d as Record<string, unknown>).url as string });
-    }
-  }
-  return c.json({ error: JSON.stringify(data) }, 500);
+  const url = await res.text();
+  if (res.ok && url.startsWith('http')) return c.json({ url: url.trim() });
+  return c.json({ error: url || 'Upload failed' }, 500);
 });
 
 // ── Plugin manager page ────────────────────────────────────────────

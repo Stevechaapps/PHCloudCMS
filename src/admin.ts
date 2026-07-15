@@ -756,32 +756,9 @@ fetch('/api/admin/nav').then(function(r){return r.json()}).then(function(data){i
 
 // ── Settings page ──────────────────────────────────────────────────
 
-export function settingsBody(current: { imgbb_api_key: string }): string {
+export function settingsBody(): string {
 return `<h2 style="margin-bottom:1.5rem">Settings</h2>
-<form id="form" style="max-width:500px">
-<div class="form-group">
-<label for="imgbb_api_key">ImgBB API Key <span style="color:#64748b;font-weight:400">(for image uploads)</span></label>
-<input type="text" id="imgbb_api_key" name="imgbb_api_key" value="${escAttr(current.imgbb_api_key)}" placeholder="Get your key at https://api.imgbb.com" />
-<p style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem">Paste images into the post editor to auto-upload via ImgBB. Get a free API key from imgbb.com.</p>
-</div>
-<button type="submit" class="btn btn-primary">Save Settings</button>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
-</form>
-<script>
-document.getElementById('form').addEventListener('submit',function(e){
-e.preventDefault();
-var status=document.getElementById('status');
-status.style.color='#2563eb';
-status.textContent='Saving…';
-fetch('/api/admin/settings',{
-method:'POST',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({
-imgbb_api_key:document.getElementById('imgbb_api_key').value
-})}).then(function(res){
-if(res.ok){status.style.color='#16a34a';status.textContent='Saved!'}
-else{status.style.color='#dc2626';status.textContent='Error saving settings'}})});
-</script>`;
+<p style="color:#64748b">No settings to configure. Paste images into the post editor — they auto-upload via catbox.moe.</p>`;
 }
 
 // ── Escaping helpers ──────────────────────────────────────────────
