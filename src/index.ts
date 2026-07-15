@@ -394,16 +394,26 @@ app.post('/api/upload', async (c) => {
   const file = formData.get('image') as File | null;
   if (!file) return c.json({ error: 'No image file provided' }, 400);
   const buf = await file.arrayBuffer();
-  const catForm = new FormData();
-  catForm.append('reqtype', 'fileupload');
-  catForm.append('fileToUpload', new File([buf], file.name || 'image.png', { type: file.type || 'image/png' }));
-  const res = await fetch('https://catbox.moe/user/api.php', {
+  const clientId = 'dcd01ec7c5a4cca';
+  const boundary = '----Boundary' + Math.random().toString(36).slice(2);
+  const enc = (s: string) => new TextEncoder().encode(s);
+  const header = enc('--' + boundary + '\r\nContent-Disposition: form-data; name="image"\r\n\r\n');
+  const footer = enc('\r\n--' + boundary + '--\r\n');
+  const body = new Uint8Array(header.byteLength + buf.byteLength + footer.byteLength);
+  body.set(header, 0);
+  body.set(new Uint8Array(buf), header.byteLength);
+  body.set(footer, header.byteLength + buf.byteLength);
+  const res = await fetch('https://api.imgur.com/3/image', {
     method: 'POST',
-    body: catForm
+    headers: { 'Content-Type': 'multipart/form-data; boundary=' + boundary, 'Authorization': 'Client-ID ' + clientId },
+    body
   });
-  const url = await res.text();
-  if (res.ok && url.startsWith('http')) return c.json({ url: url.trim() });
-  return c.json({ error: url || 'Upload failed' }, 500);
+  const data = await res.json() as Record<string, unknown>;
+  if ((data as Record<string, unknown>).success && (data as Record<string, unknown>).data) {
+    const link = ((data as Record<string, unknown>).data as Record<string, unknown>).link as string | undefined;
+    if (link) return c.json({ url: link });
+  }
+  return c.json({ error: JSON.stringify(data) }, 500);
 });
 
 // ── Plugin manager page ────────────────────────────────────────────
