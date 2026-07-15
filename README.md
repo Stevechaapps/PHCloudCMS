@@ -243,25 +243,22 @@ Your post appears on the homepage immediately.
 
 ## Adding Images to Posts
 
-PHCloud has **no built-in image storage** — images are hosted externally via Imgur (free, no account required for site visitors).
+PHCloud has **no built-in image storage** — images are hosted externally via ImgBB (free, unlimited storage, 32MB max per image).
 
-Imgur's upload API is **completely free** — no credit card, no billing, no paid tier. You just register an app to generate a Client ID. The upload never touches your Worker (zero server bandwidth).
+ImgBB's upload API is **free** — just sign up for an account and generate an API key. The upload goes browser → ImgBB directly. Your Worker never touches the image bytes (zero server bandwidth).
 
 ### One-time Setup
 
-1. Go to [api.imgur.com/oauth2/addclient](https://api.imgur.com/oauth2/addclient)
-2. Enter any name (e.g. "PHCloud CMS")
-3. **Authorization type**: **OAuth 2 without a callback URL**
-4. **Email**: your email address
-5. Leave all other fields blank (no website, no callback URL needed)
-6. Submit — copy the **Client ID** (looks like `a1b2c3d4e5f6g7h`)
-7. In your admin panel, go to **Settings** → paste the Client ID → **Save Settings**
+1. Go to [imgbb.com](https://imgbb.com) and create a free account
+2. Visit [api.imgbb.com](https://api.imgbb.com) and click **Generate API Key**
+3. Copy the generated key (looks like `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p`)
+4. In your admin panel, go to **Settings** → paste the key → **Save Settings**
 
 ### Usage
 
-In the post/page editor, **paste an image** (Ctrl+V) directly into the content textarea. The image uploads to Imgur in the background and the Markdown `![](https://i.imgur.com/xxx.png)` is inserted at your cursor position.
+In the post/page editor, **paste an image** (Ctrl+V) directly into the content textarea. The image uploads to ImgBB in the background and the Markdown `![](https://i.ibb.co/xxx/image.jpg)` is inserted at your cursor position.
 
-> **How it works**: The upload goes browser → Imgur directly. Your Worker never touches the image bytes — zero server bandwidth, zero storage cost.
+> **How it works**: The upload goes browser → ImgBB directly. Your Worker never touches the image bytes — zero server bandwidth, zero storage cost.
 
 ---
 
@@ -295,7 +292,7 @@ npx tsc --noEmit
 |---|---|---|
 | **Admin Panel** | Dashboard, full CRUD for posts/pages/categories, navigation editor, settings |
 | **Markdown Editor** | Toolbar (bold, italic, headings, links, lists, code, preview) + paste-to-upload images |
-| **Image Upload** | Paste any image → auto-uploaded to Imgur → Markdown inserted at cursor |
+| **Image Upload** | Paste any image → auto-uploaded to ImgBB → Markdown inserted at cursor |
 | **Pages** | Static pages (About, Contact, Privacy, etc.) alongside posts |
 | **Categories** | Organize content with categories, browse by `/category/:slug` |
 | **Navigation** | Custom header links, editable from admin |
