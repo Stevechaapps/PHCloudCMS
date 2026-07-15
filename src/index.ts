@@ -428,9 +428,14 @@ app.post('/api/upload', async (c) => {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params
   });
-  const data = await res.json() as { success?: boolean; data?: { url?: string }; error?: { message?: string } };
-  if (data.success && data.data?.url) return c.json({ url: data.data.url });
-  return c.json({ error: 'ImgBB upload failed' }, 500);
+  const text = await res.text();
+  let data: Record<string, unknown>;
+  try { data = JSON.parse(text) } catch { return c.json({ error: text }, 500); }
+  const d = data.data;
+  if (data.success && d && typeof d === 'object' && 'url' in d) {
+    return c.json({ url: (d as Record<string, unknown>).url as string });
+  }
+  return c.json({ error: JSON.stringify(data) }, 500);
 });
 
 // ── Plugin manager page ────────────────────────────────────────────
