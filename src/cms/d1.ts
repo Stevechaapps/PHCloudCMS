@@ -54,8 +54,6 @@ export async function migrate(db: D1Database): Promise<void> {
   try { await db.prepare("ALTER TABLE posts ADD COLUMN type TEXT NOT NULL DEFAULT 'post'").run(); } catch {}
   try { await db.prepare("ALTER TABLE posts ADD COLUMN publish_at TEXT").run(); } catch {}
   try { await db.prepare("ALTER TABLE posts ADD COLUMN preview_token TEXT").run(); } catch {}
-  // Clean up old settings keys
-  try { await db.prepare("DELETE FROM settings WHERE key = 'imgur_client_id'").run(); } catch {}
   // Now create indexes safely (column exists)
   for (const stmt of SCHEMA_STATEMENTS) {
     if (stmt.startsWith('CREATE INDEX')) {
