@@ -411,15 +411,12 @@ app.post('/api/upload', async (c) => {
   if (auth instanceof Response) return auth;
   const apiKey = await getSetting(c.env.DB, 'imgbb_api_key') || (c.env as Record<string, unknown>).IMGBB_API_KEY as string | undefined;
   if (!apiKey) return c.json({ error: 'ImgBB API key not configured' }, 400);
-  const formData = await c.req.raw.formData();
-  const file = formData.get('image') as File | null;
-  if (!file) return c.json({ error: 'No image file provided' }, 400);
-  const buf = await file.arrayBuffer();
-  const imgbbForm = new FormData();
-  imgbbForm.append('image', new Blob([buf], { type: file.type || 'image/png' }), file.name || 'image.png');
+  const ctype = c.req.header('Content-Type') || '';
+  const body = await c.req.raw.arrayBuffer();
   const res = await fetch('https://api.imgbb.com/1/upload?key=' + encodeURIComponent(apiKey), {
     method: 'POST',
-    body: imgbbForm
+    headers: { 'Content-Type': ctype },
+    body
   });
   const data = await res.json() as { success?: boolean; data?: { url?: string }; error?: { message?: string } };
   if (data.success && data.data?.url) return c.json({ url: data.data.url });
