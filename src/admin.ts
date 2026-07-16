@@ -213,7 +213,7 @@ export function newPostBody(): string {
 <button type="submit" class="btn btn-primary">Save Post</button>
 <a href="/admin/posts" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>
 </div>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
+<div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 </form>
 <script>
 function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}
@@ -401,7 +401,7 @@ ${previewLink ? '<div style="font-size:0.85rem;margin-bottom:0.75rem"><a href="'
 <button type="submit" class="btn btn-primary">Update Post</button>
 <a href="/admin/posts" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>
 </div>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
+<div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 </form>
 <script>
 function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}
@@ -739,7 +739,7 @@ export function newPageBody(): string {
 <button type="submit" class="btn btn-primary">Save Page</button>
 <a href="/admin/pages" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>
 </div>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
+<div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 </form>
 <script>
 var titleEl=document.getElementById('title');
@@ -794,7 +794,7 @@ export function editPageBody(page: {
 <button type="submit" class="btn btn-primary">Update Page</button>
 <a href="/admin/pages" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>
 </div>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
+<div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 </form>
 <script>
 var titleEl=document.getElementById('title');
@@ -870,7 +870,7 @@ export function navBody(): string {
 <div id="items"></div>
 <div style="margin:1rem 0"><button class="btn btn-sm" onclick="addItem()">+ Add Link</button></div>
 <button class="btn btn-primary" onclick="save()">Save Navigation</button>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
+<div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 <script>
 var items=[];
 function render(){
@@ -907,7 +907,7 @@ export function settingsBody(): string {
 <input type="file" id="logoFile" accept="image/*" />
 </div>
 <button type="submit" class="btn btn-primary">Save Settings</button>
-<div id="status" style="margin-top:1rem;font-size:0.9rem"></div>
+<div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 </form>
 <script>
 fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){
