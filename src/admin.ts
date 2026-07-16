@@ -137,7 +137,7 @@ return '<tr>'
 +'<td style="display:flex;gap:0.4rem">'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
-+'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)})}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
++'</td></tr>'}).join('');renderAdminPage(data.page,data.totalPages)}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
 function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 loadPosts();</script>`;
 }
@@ -170,7 +170,7 @@ tbody.innerHTML=data.results.map(function(p){return '<tr>'
 +'<td style="display:flex;gap:0.4rem">'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
-+'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)})}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
++'</td></tr>'}).join('');renderAdminPage(data.page,data.totalPages)}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
 function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 loadPosts();</script>`;
 }
