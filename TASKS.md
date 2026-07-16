@@ -32,7 +32,7 @@ Status: migration complete, beginning Phase 2 security fixes
 - [ ] Toolbar buttons: add `aria-label` (8 buttons × 2 forms = 16 instances)
 - [ ] Status divs: add `aria-live="polite"` + `role="status"` (5 locations)
 - [x] Content textarea: add `for="content"` label association (forms in newPostBody + editBody — pages already had it)
-- [ ] Nav inputs: add `<label for>` (navBody, 2 inputs)
+- [x] Nav inputs: add `aria-label` (navBody, 2 inputs — used aria-label instead of <label for> to avoid disrupting flex layout)
 - [ ] Public link color: darken from `#f97316` → target ≥4.5:1 on `#f8fafc`
 
 ---
