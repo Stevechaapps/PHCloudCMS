@@ -235,7 +235,7 @@ fetch('/api/admin/tags').then(function(r){return r.json()}).then(function(cats){
 var html='';
 for(var i=0;i<cats.length;i++){
 html+='<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer"><input type="checkbox" value="'+cats[i].id+'" class="tag-cb" /> '+cats[i].name+'</label>'}
-document.getElementById('catCheckboxes').innerHTML=html||'<span style="color:#94a3b8;font-size:0.85rem">No tags yet. <a href="/admin/tags">Manage tags</a>.</span>'});
+document.getElementById('tagCheckboxes').innerHTML=html||'<span style="color:#94a3b8;font-size:0.85rem">No tags yet. <a href="/admin/tags">Manage tags</a>.</span>'});
 function getTagIds(){var ids=[];[].forEach.call(document.querySelectorAll('.tag-cb:checked'),function(cb){ids.push(Number(cb.value))});return ids}
 document.getElementById('form').addEventListener('submit',function(e){
 e.preventDefault();
