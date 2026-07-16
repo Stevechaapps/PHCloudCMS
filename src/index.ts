@@ -736,19 +736,6 @@ function initActivePlugins(registry: CMSRegistry, active: Record<string, boolean
 
 app.get("/health", (c) => c.json({ ok: true }));
 
-// ── One-shot migrate (delete after running) ─────────────────────────────
-app.get("/migrate", async (c) => {
-  const db = c.env.DB;
-  const before = await runMigrations(db);
-  const { backfillMissingDefaults } = await import("./cms/migrations.js");
-  await backfillMissingDefaults(db);
-  return c.json({
-    ok: true,
-    applied: before,
-    note: "Delete this endpoint after confirming the migration ran successfully.",
-  });
-});
-
 // ── RSS feed ──────────────────────────────────────────────────────
 
 app.get("/feed.xml", async (c) => {
