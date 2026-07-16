@@ -1,6 +1,6 @@
 export const layout = 'centered' as const;
 
-export const css = `:root{--bg:#f8fafc;--surface:#fff;--text:#1e293b;--text-light:#64748b;--text-muted:#94a3b8;--accent:#f97316;--accent-hover:#ea580c;--border:#e2e8f0;--radius:8px;--font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--font-mono:'JetBrains Mono','Fira Code',monospace;--shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);--shadow-lg:0 4px 16px rgba(0,0,0,0.08)}
+export const css = `:root{--bg:#f8fafc;--surface:#fff;--text:#1e293b;--text-light:#64748b;--text-muted:#94a3b8;--accent:#b45309;--accent-hover:#ea580c;--border:#e2e8f0;--radius:8px;--font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--font-mono:'JetBrains Mono','Fira Code',monospace;--shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);--shadow-lg:0 4px 16px rgba(0,0,0,0.08)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
 a{color:var(--accent);text-decoration:none}a:hover{color:var(--accent-hover)}

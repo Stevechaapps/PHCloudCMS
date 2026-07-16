@@ -33,7 +33,7 @@ Status: migration complete, beginning Phase 2 security fixes
 - [ ] Status divs: add `aria-live="polite"` + `role="status"` (5 locations)
 - [x] Content textarea: add `for="content"` label association (forms in newPostBody + editBody — pages already had it)
 - [x] Nav inputs: add `aria-label` (navBody, 2 inputs — used aria-label instead of <label for> to avoid disrupting flex layout)
-- [ ] Public link color: darken from `#f97316` → target ≥4.5:1 on `#f8fafc`
+- [x] Public link color: light scheme `--accent` `#f97316` (2.68:1) → `#b45309` (4.80:1 pass). Dark scheme unchanged (`#f97316` already 5.22:1+).
 
 ---
 
