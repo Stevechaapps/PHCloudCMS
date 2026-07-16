@@ -1137,7 +1137,8 @@ app.get("/:slug?", async (c) => {
   const siteName = settings.site_name ?? "My Site";
   const seoDescription = settings.seo_description ?? "";
   const siteLogo = settings.site_logo ?? null;
-  const nav: NavItem[] = JSON.parse(navVal);
+  let nav: NavItem[];
+try { nav = JSON.parse(navVal); } catch { nav = []; }
 
   initActivePlugins(registry, plugins);
 

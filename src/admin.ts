@@ -191,8 +191,8 @@ export function newPostBody(): string {
     <button type="button" onclick="mdLine(event,'## ')" title="Heading 2" aria-label="Heading 2">H2</button>
     <button type="button" onclick="mdLine(event,'### ')" title="Heading 3" aria-label="Heading 3">H3</button>
     <span class="sep"></span>
-    <button type="button" onclick=\"mdLink(event)\" title=\"Link\" aria-label=\"Insert link\">Link</button>
-    <button type="button" onclick=\"mdImage(event)\" title=\"Image\" aria-label=\"Insert image\">Img</button>
+    <button type="button" onclick="mdLink(event)" title="Link" aria-label="Insert link">Link</button>
+    <button type="button" onclick="mdImage(event)" title="Image" aria-label="Insert image">Img</button>
     <span class="sep"></span>
     <button type="button" onclick="mdLine(event,'> ')" title="Blockquote" aria-label="Insert blockquote">Quote</button>
     <button type="button" onclick="mdLine(event,'- ')" title="List item" aria-label="Insert list item">List</button>
@@ -377,8 +377,8 @@ export function editBody(post: {
     <button type="button" onclick="mdLine(event,'## ')" title="Heading 2" aria-label="Heading 2">H2</button>
     <button type="button" onclick="mdLine(event,'### ')" title="Heading 3" aria-label="Heading 3">H3</button>
     <span class="sep"></span>
-    <button type="button" onclick=\"mdLink(event)\" title=\"Link\" aria-label=\"Insert link\">Link</button>
-    <button type="button" onclick=\"mdImage(event)\" title=\"Image\" aria-label=\"Insert image\">Img</button>
+    <button type="button" onclick="mdLink(event)" title="Link" aria-label="Insert link">Link</button>
+    <button type="button" onclick="mdImage(event)" title="Image" aria-label="Insert image">Img</button>
     <span class="sep"></span>
     <button type="button" onclick="mdLine(event,'> ')" title="Blockquote" aria-label="Insert blockquote">Quote</button>
     <button type="button" onclick="mdLine(event,'- ')" title="List item" aria-label="Insert list item">List</button>
