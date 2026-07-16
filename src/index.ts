@@ -39,6 +39,12 @@ type DbPost = Post & {
 };
 type NavItem = { label: string; url: string };
 
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+async function parseJsonBody(c: any): Promise<Record<string, unknown> | null> {
+  try { return await c.req.json(); } catch { return null; }
+}
+
 function autoExcerpt(content: string): string {
   const text = content
     .replace(/[#*>`\[\]!\-]/g, "")
@@ -75,15 +81,29 @@ const SESSION_TTL = 7 * 24 * 60 * 60;
 const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", onboardingGuard);
+app.use("*", async (c, next) => {
+  await next();
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("X-Frame-Options", "DENY");
+  c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  c.header("Content-Security-Policy", [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+  ].join("; "));
+});
 
 // ── Auth ──────────────────────────────────────────────────────────
 app.post("/api/auth/login", async (c) => {
-  const { username, password } = await c.req.json<{
-    username?: string;
-    password?: string;
-  }>();
-  const usernameStr = String(username ?? "");
-  const passwordStr = String(password ?? "");
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const usernameStr = String(body.username ?? "");
+  const passwordStr = String(body.password ?? "");
 
   const existingSessionId = getCookie(c, SESSION_COOKIE);
   if (existingSessionId) {
@@ -92,13 +112,16 @@ app.post("/api/auth/login", async (c) => {
       const admin = await c.env.DB.prepare("SELECT id, password_hash FROM admins WHERE username = ?").bind(usernameStr).first<{ id: number; password_hash: string }>();
       const valid = admin && (await verifyPassword(passwordStr, admin.password_hash));
       if (valid) {
-        setCookie(c, SESSION_COOKIE, existingSessionId, { maxAge: SESSION_TTL, path: "/", httpOnly: true, sameSite: "Lax", secure: true });
-        return c.json({ ok: true, sessionId: existingSessionId });
+        const newSid = crypto.randomUUID();
+        await c.env.CACHE.delete(`session:${existingSessionId}`);
+        await c.env.CACHE.put(`session:${newSid}`, String(admin.id), { expirationTtl: SESSION_TTL });
+        setCookie(c, SESSION_COOKIE, newSid, { maxAge: SESSION_TTL, path: "/", httpOnly: true, sameSite: "Lax", secure: true });
+        return c.json({ ok: true });
       }
     }
   }
 
-  const ip = c.req.header("cf-connecting-ip") ?? "unknown";
+  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const key = `login:${ip}`;
   const count = await c.env.CACHE.get(key);
   const attempts = Number.parseInt(count ?? "0", 10);
@@ -106,11 +129,7 @@ app.post("/api/auth/login", async (c) => {
     const ttl = await c.env.CACHE.get(key + ":ts");
     if (ttl && Number(ttl) > Date.now()) {
       const waitSec = Math.ceil((Number(ttl) - Date.now()) / 1000);
-      return c.body(
-        JSON.stringify({ error: `Too many attempts. Try again in ${waitSec}s` }),
-        429,
-        { "Content-Type": "application/json" },
-      );
+      return c.json({ error: `Too many attempts. Try again in ${waitSec}s` }, 429);
     }
   }
 
@@ -120,9 +139,7 @@ app.post("/api/auth/login", async (c) => {
     .bind(usernameStr)
     .first<{ id: number; password_hash: string }>();
 
-  const valid =
-    admin &&
-    (await verifyPassword(passwordStr, admin.password_hash));
+  const valid = admin && (await verifyPassword(passwordStr, admin.password_hash));
 
   if (!valid) {
     const newCount = attempts + 1;
@@ -130,9 +147,7 @@ app.post("/api/auth/login", async (c) => {
     if (newCount >= 5) {
       await c.env.CACHE.put(key + ":ts", String(Date.now() + 300000), { expirationTtl: 300 });
     }
-    return c.body(JSON.stringify({ error: "Invalid credentials" }), 401, {
-      "Content-Type": "application/json",
-    });
+    return c.json({ error: "Invalid credentials" }, 401);
   }
 
   const sessionId = crypto.randomUUID();
@@ -146,7 +161,8 @@ app.post("/api/auth/login", async (c) => {
     sameSite: "Lax",
     secure: true,
   });
-  return c.json({ ok: true, sessionId });
+  await c.env.CACHE.delete(key);
+  return c.json({ ok: true });
 });
 
 app.post("/api/auth/logout", async (c) => {
@@ -182,46 +198,40 @@ app.post("/api/admin/posts", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
 
-  const body = await c.req.json<{
-    title?: string;
-    slug?: string;
-    content?: string;
-    excerpt?: string;
-    published?: boolean;
-    publish_at?: string | null;
-    tag_ids?: number[];
-  }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const title = String(body.title ?? "");
+  const slug = String(body.slug ?? "");
+  const content = String(body.content ?? "");
+  if (!title.trim()) return c.json({ error: "Title is required" }, 400);
+  if (!slug || !SLUG_RE.test(slug)) return c.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, 400);
+
   const db = c.env.DB;
   const now = new Date().toISOString();
   const publishAt = body.publish_at || null;
   const published = body.publish_at ? 0 : body.published === true ? 1 : 0;
   const previewToken = crypto.randomUUID();
-  const content = body.content ?? "";
-  const excerpt = body.excerpt || autoExcerpt(content);
-  const result = await db
-    .prepare(
-      "INSERT INTO posts (title, slug, content, excerpt, published, publish_at, preview_token, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    )
-    .bind(
-      body.title ?? "",
-      body.slug ?? "",
-      content,
-      excerpt,
-      published,
-      publishAt,
-      previewToken,
-      now,
-      now,
-    )
-    .run();
+  const excerpt = String(body.excerpt || autoExcerpt(content));
+
+  let result;
+  try {
+    result = await db
+      .prepare(
+        "INSERT INTO posts (title, slug, content, excerpt, published, publish_at, preview_token, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .bind(title, slug, content, excerpt, published, publishAt, previewToken, now, now)
+      .run();
+  } catch (e: any) {
+    if (String(e?.message ?? "").includes("UNIQUE")) return c.json({ error: "A post with this slug already exists" }, 409);
+    throw e;
+  }
 
   const postId = result.meta.last_row_id;
-  if (body.tag_ids?.length) {
-    for (const tid of body.tag_ids) {
+  const tagIds = Array.isArray(body.tag_ids) ? body.tag_ids : [];
+  if (tagIds.length) {
+    for (const tid of tagIds) {
       await db
-        .prepare(
-          "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)",
-        )
+        .prepare("INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)")
         .bind(postId, tid)
         .run();
     }
@@ -229,7 +239,7 @@ app.post("/api/admin/posts", async (c) => {
 
   await c.env.CACHE.delete("cms:posts:pub");
   await c.env.CACHE.delete("cms:homepage");
-  return c.json({ ok: true });
+  return c.json({ ok: true, id: postId });
 });
 
 app.get("/api/admin/posts", async (c) => {
@@ -280,41 +290,36 @@ app.patch("/api/admin/posts/:id", async (c) => {
   if (auth instanceof Response) return auth;
 
   const id = c.req.param("id");
-  const body = await c.req.json<{
-    title?: string;
-    slug?: string;
-    content?: string;
-    excerpt?: string;
-    published?: boolean;
-    publish_at?: string | null;
-    tag_ids?: number[];
-  }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const title = String(body.title ?? "");
+  const slug = String(body.slug ?? "");
+  const content = String(body.content ?? "");
+  if (!title.trim()) return c.json({ error: "Title is required" }, 400);
+  if (!slug || !SLUG_RE.test(slug)) return c.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, 400);
+
   const now = new Date().toISOString();
   const publishAt = body.publish_at || null;
   const published = body.publish_at ? 0 : body.published === true ? 1 : 0;
-  const content = body.content ?? "";
-  const excerpt = body.excerpt || autoExcerpt(content);
+  const excerpt = String(body.excerpt || autoExcerpt(content));
 
   const existing = await c.env.DB.prepare("SELECT preview_token FROM posts WHERE id = ?").bind(id).first<{ preview_token: string | null }>();
   const previewToken = existing?.preview_token || crypto.randomUUID();
 
-  await c.env.DB.prepare(
-    "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, publish_at=?, preview_token=?, updated_at=? WHERE id=?",
-  )
-    .bind(
-      body.title ?? "",
-      body.slug ?? "",
-      content,
-      excerpt,
-      published,
-      publishAt,
-      previewToken,
-      now,
-      id,
+  let result;
+  try {
+    result = await c.env.DB.prepare(
+      "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, publish_at=?, preview_token=?, updated_at=? WHERE id=?",
     )
-    .run();
+      .bind(title, slug, content, excerpt, published, publishAt, previewToken, now, id)
+      .run();
+  } catch (e: any) {
+    if (String(e?.message ?? "").includes("UNIQUE")) return c.json({ error: "A post with this slug already exists" }, 409);
+    throw e;
+  }
+  if (result.meta.changes === 0) return c.json({ error: "Post not found" }, 404);
 
-  if (body.tag_ids) {
+  if (Array.isArray(body.tag_ids)) {
     await c.env.DB.prepare("DELETE FROM post_tags WHERE post_id = ?")
       .bind(id)
       .run();
@@ -336,12 +341,12 @@ app.delete("/api/admin/posts/:id", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
 
-  await c.env.DB.prepare("DELETE FROM posts WHERE id = ?")
+  const result = await c.env.DB.prepare("DELETE FROM posts WHERE id = ?")
     .bind(c.req.param("id"))
     .run();
+  if (result.meta.changes === 0) return c.json({ error: "Post not found" }, 404);
   await c.env.CACHE.delete("cms:posts:pub");
   await c.env.CACHE.delete("cms:homepage");
-  await c.env.CACHE.delete("cms:settings");
   return c.json({ ok: true });
 });
 
@@ -349,11 +354,12 @@ app.patch("/api/admin/posts/:id/publish", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
   const now = new Date().toISOString();
-  await c.env.DB.prepare(
-    "UPDATE posts SET published=1, publish_at=NULL, updated_at=? WHERE id=?",
+  const result = await c.env.DB.prepare(
+    "UPDATE posts SET published=1, publish_at=NULL, preview_token=NULL, updated_at=? WHERE id=?",
   )
     .bind(now, c.req.param("id"))
     .run();
+  if (result.meta.changes === 0) return c.json({ error: "Post not found" }, 404);
   await c.env.CACHE.delete("cms:posts:pub");
   await c.env.CACHE.delete("cms:homepage");
   return c.json({ ok: true });
@@ -363,11 +369,12 @@ app.patch("/api/admin/posts/:id/unpublish", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
   const now = new Date().toISOString();
-  await c.env.DB.prepare(
+  const result = await c.env.DB.prepare(
     "UPDATE posts SET published=0, updated_at=? WHERE id=?",
   )
     .bind(now, c.req.param("id"))
     .run();
+  if (result.meta.changes === 0) return c.json({ error: "Post not found" }, 404);
   await c.env.CACHE.delete("cms:posts:pub");
   await c.env.CACHE.delete("cms:homepage");
   return c.json({ ok: true });
@@ -378,22 +385,21 @@ app.patch("/api/admin/posts/:id/unpublish", async (c) => {
 app.post("/api/install", async (c) => {
   const db = c.env.DB;
   if (await isConfigured(db)) {
-    return c.body(
-      JSON.stringify({ error: "Already configured" }),
-      409,
-      { "Content-Type": "application/json" },
-    );
+    return c.json({ error: "Already configured" }, 409);
   }
+  const lockKey = "install:lock";
+  const lock = await c.env.CACHE.get(lockKey);
+  if (lock) return c.json({ error: "Installation in progress" }, 429);
+  await c.env.CACHE.put(lockKey, "1", { expirationTtl: 60 });
   try {
   const body = await c.req.parseBody();
-  const siteName = String(body.siteName ?? "My Site");
+  const siteName = String(body.siteName ?? "").trim();
+  const adminUsername = String(body.adminUsername ?? "").trim();
     const adminPassword = String(body.adminPassword ?? "");
+    if (!siteName) return c.json({ error: "Site name is required" }, 400);
+    if (!adminUsername) return c.json({ error: "Admin username is required" }, 400);
     if (adminPassword.length < 8) {
-      return c.body(
-        JSON.stringify({ error: "Password must be at least 8 characters" }),
-        400,
-        { "Content-Type": "application/json" },
-      );
+      return c.json({ error: "Password must be at least 8 characters" }, 400);
     }
 
     await migrate(db);
@@ -414,7 +420,6 @@ app.post("/api/install", async (c) => {
         .prepare("UPDATE plugins SET active = 1 WHERE id = 'sitemap'")
         .run();
 
-    const adminUsername = String(body.adminUsername ?? "admin");
     const adminPasswordHash = await hashPassword(adminPassword);
     const result = await db
       .prepare(
@@ -447,14 +452,9 @@ app.post("/api/install", async (c) => {
       secure: true,
     });
     return c.json({ ok: true });
-  } catch (err) {
-    // Surface the real error so install failures are diagnosable from the
-    // wizard UI instead of a generic "Check your D1 binding".
-    return c.body(
-      JSON.stringify({ error: "install_failed", detail: "Installation failed. Check your D1 and KV bindings." }),
-      500,
-      { "Content-Type": "application/json" },
-    );
+  } catch {
+    await c.env.CACHE.delete(lockKey);
+    return c.json({ error: "Installation failed. Check your D1 and KV bindings." }, 500);
   }
 });
 
@@ -463,8 +463,9 @@ app.post("/api/install", async (c) => {
 app.post("/api/preview", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const { content } = await c.req.json<{ content?: string }>();
-  return c.json({ html: renderMarkdown(content ?? "") });
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  return c.json({ html: renderMarkdown(String(body.content ?? "")) });
 });
 
 // ── Sitemap ───────────────────────────────────────────────────────
@@ -510,7 +511,7 @@ app.get("/sitemap.xml", async (c) => {
 
 app.get("/admin", async (c) => {
   const auth = await requireAuth(c);
-  if (auth instanceof Response) return auth;
+  if (auth instanceof Response) return c.redirect("/admin/login");
   return c.html(adminShell("Dashboard", dashboardBody()));
 });
 
@@ -619,9 +620,13 @@ app.patch("/api/admin/plugins/:id", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
   const id = c.req.param("id");
-  const { active } = await c.req.json<{ active?: boolean }>();
+  const validIds = AVAILABLE_PLUGINS.map((p) => p.id);
+  if (!validIds.includes(id)) return c.json({ error: "Unknown plugin" }, 404);
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const active = body.active === true ? 1 : 0;
   await c.env.DB.prepare("INSERT OR REPLACE INTO plugins (id, active) VALUES (?, ?)")
-    .bind(id, active === true ? 1 : 0)
+    .bind(id, active)
     .run();
   await c.env.CACHE.delete("cms:plugins");
   return c.json({ ok: true });
@@ -643,11 +648,8 @@ app.get("/api/admin/settings", async (c) => {
 app.patch("/api/admin/settings", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const body = await c.req.json<{
-    site_name?: string;
-    seo_description?: string;
-    site_logo?: string | null;
-  }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
   const db = c.env.DB;
   if (body.site_name !== undefined)
     await db
@@ -673,10 +675,10 @@ app.patch("/api/admin/settings", async (c) => {
 app.post("/api/admin/images", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const { data, filename } = await c.req.json<{
-    data?: string;
-    filename?: string;
-  }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const data = String(body.data ?? "");
+  const filename = String(body.filename ?? "");
   if (!data) return c.json({ error: "No image data" }, 400);
   const match = data.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!match) return c.json({ error: "Invalid image data" }, 400);
@@ -737,8 +739,6 @@ app.delete("/api/admin/images/:id", async (c) => {
   const id = parseInt(c.req.param("id"), 10);
   if (isNaN(id)) return c.body(null, 400);
   await deleteImage(c.env.DB, id, c.env.CACHE);
-  await c.env.CACHE.delete(`img:${id}:data`);
-  await c.env.CACHE.delete(`img:${id}:meta`);
   return c.body(null, 204);
 });
 
@@ -810,29 +810,30 @@ app.get("/search", async (c) => {
   const settings = await getCached(c, "cms:settings", 600, async () => await getAllSettings(db)) as Record<string, string>;
   const siteName = settings.site_name ?? "My Site";
   const seoDescription = settings.seo_description ?? "";
+  const safeQ = q.replace(/%/g, "\\%").replace(/_/g, "\\_");
 
   let bodyHtml = "<h1>Search</h1>";
   bodyHtml +=
-    '<form action="/search" method="get" style="margin-bottom:2rem"><input type="text" name="q" value="' +
+    '<form action="/search" method="get" role="search" style="margin-bottom:2rem"><label for="search-input" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0">Search</label><input type="text" id="search-input" name="q" value="' +
     esc(q) +
-    '" placeholder="Search posts…" style="width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem"/></form>';
+    '" placeholder="Search posts…" style="width:100%;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem" /><button type="submit" style="margin-top:0.5rem;padding:0.5rem 1rem;background:#0f172a;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem">Search</button></form>';
 
   if (q) {
     const page = Math.max(1, parseInt(c.req.query("page") ?? "1", 10));
     const countRow = await db
       .prepare(
-        "SELECT COUNT(*) as total FROM posts WHERE published = 1 AND type = 'post' AND (title LIKE ? OR content LIKE ?)",
+        "SELECT COUNT(*) as total FROM posts WHERE published = 1 AND type = 'post' AND (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')",
       )
-      .bind("%" + q + "%", "%" + q + "%")
+      .bind("%" + safeQ + "%", "%" + safeQ + "%")
       .first<{ total: number }>();
     const totalPosts = countRow?.total ?? 0;
     const totalPages = Math.ceil(totalPosts / 10);
 
     const rows = await db
       .prepare(
-        "SELECT slug, title, excerpt, updated_at FROM posts WHERE published = 1 AND type = 'post' AND (title LIKE ? OR content LIKE ?) ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+        "SELECT slug, title, excerpt, updated_at FROM posts WHERE published = 1 AND type = 'post' AND (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\') ORDER BY updated_at DESC LIMIT ? OFFSET ?",
       )
-      .bind("%" + q + "%", "%" + q + "%", 10, (page - 1) * 10)
+      .bind("%" + safeQ + "%", "%" + safeQ + "%", 10, (page - 1) * 10)
       .all<{
         slug: string;
         title: string;
@@ -849,6 +850,11 @@ app.get("/search", async (c) => {
   }
 
   const registry = new CMSRegistry();
+  const activePlugins = await getCached(c, "cms:plugins", 300, async () => {
+    const rows = await db.prepare("SELECT id, active FROM plugins").all<{ id: string; active: number }>();
+    return Object.fromEntries(rows.results.map((p) => [p.id, p.active === 1]));
+  });
+  initActivePlugins(registry, activePlugins);
   const headPayload = await registry.executePipeline("render:head", {
     siteName,
     title: "Search · " + siteName,
@@ -917,6 +923,11 @@ app.get("/tag/:slug", async (c) => {
       : '<p style="color:#64748b">No posts with this tag.</p>') +
     renderPagination(page, totalPages, "/tag/" + esc(tagSlug), {});
   const registry = new CMSRegistry();
+  const activePlugins = await getCached(c, "cms:plugins", 300, async () => {
+    const rows = await db.prepare("SELECT id, active FROM plugins").all<{ id: string; active: number }>();
+    return Object.fromEntries(rows.results.map((p) => [p.id, p.active === 1]));
+  });
+  initActivePlugins(registry, activePlugins);
   const headPayload = await registry.executePipeline("render:head", {
     siteName,
     title: tag.name + " · " + siteName,
@@ -947,11 +958,11 @@ app.get("/api/admin/tags", async (c) => {
 app.post("/api/admin/tags", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const { name, slug } = await c.req.json<{ name?: string; slug?: string }>();
-  if (!name || !slug)
-    return c.body(JSON.stringify({ error: "Name and slug required" }), 400, {
-      "Content-Type": "application/json",
-    });
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const name = String(body.name ?? "").trim();
+  const slug = String(body.slug ?? "").trim();
+  if (!name || !slug) return c.json({ error: "Name and slug required" }, 400);
   await c.env.DB.prepare(
     "INSERT OR IGNORE INTO tags (name, slug) VALUES (?, ?)",
   )
@@ -987,7 +998,9 @@ app.get("/api/admin/posts/:id/tags", async (c) => {
 app.post("/api/admin/nav", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const { items } = await c.req.json<{ items: NavItem[] }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const items = Array.isArray(body.items) ? body.items : [];
   await c.env.DB.prepare(
     "INSERT OR REPLACE INTO settings (key, value) VALUES ('nav', ?)",
   )
@@ -1002,7 +1015,7 @@ app.get("/api/admin/nav", async (c) => {
   if (auth instanceof Response) return auth;
   const val = await getSetting(c.env.DB, "nav");
   let navParsed: NavItem[];
-  try { navParsed = val ? JSON.parse(val) : []; } catch { navParsed = []; }
+  try { const p = val ? JSON.parse(val) : []; navParsed = Array.isArray(p) ? p : []; } catch { navParsed = []; }
   return c.json(navParsed);
 });
 
@@ -1011,29 +1024,28 @@ app.get("/api/admin/nav", async (c) => {
 app.post("/api/admin/pages", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const body = await c.req.json<{
-    title?: string;
-    slug?: string;
-    content?: string;
-    published?: boolean;
-  }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
+  const title = String(body.title ?? "").trim();
+  const slug = String(body.slug ?? "").trim();
+  if (!title) return c.json({ error: "Title is required" }, 400);
+  if (!slug || !SLUG_RE.test(slug)) return c.json({ error: "Invalid slug" }, 400);
   const db = c.env.DB;
   const now = new Date().toISOString();
-  const result = await db
-    .prepare(
-      "INSERT INTO posts (title, slug, content, excerpt, type, published, created_at, updated_at) VALUES (?, ?, ?, '', 'page', ?, ?, ?)",
-    )
-    .bind(
-      body.title ?? "",
-      body.slug ?? "",
-      body.content ?? "",
-      body.published === true ? 1 : 0,
-      now,
-      now,
-    )
-    .run();
+  let result;
+  try {
+    result = await db
+      .prepare(
+        "INSERT INTO posts (title, slug, content, excerpt, type, published, created_at, updated_at) VALUES (?, ?, ?, '', 'page', ?, ?, ?)",
+      )
+      .bind(title, slug, String(body.content ?? ""), body.published === true ? 1 : 0, now, now)
+      .run();
+  } catch (e: any) {
+    if (String(e?.message ?? "").includes("UNIQUE")) return c.json({ error: "A page with this slug already exists" }, 409);
+    throw e;
+  }
   await c.env.CACHE.delete("cms:homepage");
-  return c.json({ id: result.meta.last_row_id });
+  return c.json({ ok: true, id: result.meta.last_row_id });
 });
 
 app.get("/api/admin/pages", async (c) => {
@@ -1069,25 +1081,22 @@ app.get("/api/admin/pages/:id", async (c) => {
 app.patch("/api/admin/pages/:id", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  const body = await c.req.json<{
-    title?: string;
-    slug?: string;
-    content?: string;
-    published?: boolean;
-  }>();
+  const body = await parseJsonBody(c);
+  if (!body) return c.json({ error: "Invalid JSON" }, 400);
   const now = new Date().toISOString();
-  await c.env.DB.prepare(
+  const result = await c.env.DB.prepare(
     "UPDATE posts SET title=?, slug=?, content=?, published=?, updated_at=? WHERE id=? AND type='page'",
   )
     .bind(
-      body.title ?? "",
-      body.slug ?? "",
-      body.content ?? "",
+      String(body.title ?? ""),
+      String(body.slug ?? ""),
+      String(body.content ?? ""),
       body.published === true ? 1 : 0,
       now,
       c.req.param("id"),
     )
     .run();
+  if (result.meta.changes === 0) return c.json({ error: "Page not found" }, 404);
   await c.env.CACHE.delete("cms:homepage");
   return c.json({ ok: true });
 });
@@ -1095,9 +1104,10 @@ app.patch("/api/admin/pages/:id", async (c) => {
 app.delete("/api/admin/pages/:id", async (c) => {
   const auth = await requireAuth(c);
   if (auth instanceof Response) return auth;
-  await c.env.DB.prepare("DELETE FROM posts WHERE id = ? AND type = 'page'")
+  const result = await c.env.DB.prepare("DELETE FROM posts WHERE id = ? AND type = 'page'")
     .bind(c.req.param("id"))
     .run();
+  if (result.meta.changes === 0) return c.json({ error: "Page not found" }, 404);
   await c.env.CACHE.delete("cms:homepage");
   return c.json({ ok: true });
 });
@@ -1151,7 +1161,7 @@ app.get("/:slug?", async (c) => {
   const seoDescription = settings.seo_description ?? "";
   const siteLogo = settings.site_logo ?? null;
   let nav: NavItem[];
-try { nav = JSON.parse(navVal); } catch { nav = []; }
+  try { const p = JSON.parse(navVal); nav = Array.isArray(p) ? p : []; } catch { nav = []; }
 
   initActivePlugins(registry, plugins);
 
@@ -1329,16 +1339,20 @@ function shellFull(
     .join("");
   const adminLink = '<a href="/admin/login" style="color:#f97316">Admin</a>';
   return (
-    '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><style>' +
+    '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>' +
+    esc(siteName) +
+    '</title><link rel="sitemap" type="application/xml" href="/sitemap.xml" /><link rel="alternate" type="application/rss+xml" title="' +
+    esc(siteName) +
+    '" href="/feed.xml" /><style>' +
     THEME_CSS +
     "</style>" +
     headMarkup +
-    '</head><body><header><a href="/" class="site-name">' +
+    '</head><body><a href="#main" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0">Skip to content</a><header><div class="inner"><a href="/" class="site-name">' +
     esc(siteName) +
-    "</a><nav>" +
+    '</a><nav>' +
     navHtml +
     adminLink +
-    "</nav></header><main>" +
+    "</nav></div></header><main id=\"main\">" +
     bodyHtml +
     "</main><footer>Powered by PHCloud CMS on Cloudflare Workers</footer></body></html>"
   );

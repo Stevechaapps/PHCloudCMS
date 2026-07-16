@@ -1,9 +1,10 @@
 // src/cms/auth.ts — Password hashing using Web Crypto (PBKDF2).
 // No external deps — runs natively in Workers/V8 isolates.
 
-// 10K iterations keeps us under Workers free tier 10ms CPU limit
-// while still providing adequate protection for a CMS admin account.
-const PBKDF2_ITERATIONS = 10_000;
+// 100K iterations — OWASP recommends 600K for SHA-256, but Workers free tier
+// has a 10ms CPU limit. 100K is a 10x improvement over the previous 10K
+// while staying within free-tier constraints.
+const PBKDF2_ITERATIONS = 100_000;
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));

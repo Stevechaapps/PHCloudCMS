@@ -115,6 +115,9 @@ function serveOnboardingUI(c: Context): Response {
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           errEl.style.display = 'none';
+          const btn = form.querySelector('button');
+          btn.disabled = true;
+          btn.textContent = 'Installing…';
           const fd = new FormData(form);
           const pw = String(fd.get('adminPassword') ?? '');
           if (!pw || pw.length < 8) {
@@ -134,6 +137,8 @@ function serveOnboardingUI(c: Context): Response {
               try { const j = JSON.parse(errBody); msg = 'Setup failed: ' + (j.detail || j.error || errBody); } catch { msg = 'Setup failed: ' + errBody; }
             }
             errEl.textContent = msg;
+            btn.disabled = false;
+            btn.textContent = 'Initialize Core Systems';
           } else {
             window.location.href = '/admin';
           }

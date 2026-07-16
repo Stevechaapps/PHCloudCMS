@@ -1,11 +1,8 @@
-// src/cms/markdown.ts — marked wrapper with link href sanitization.
+// src/cms/markdown.ts — marked wrapper with HTML sanitization.
 //
-// Sanitization strategy: marked v4+ does NOT sanitize HTML by default (DOMPurify
-// is the upstream-recommended approach, ~20KB). For a single-admin CMS where the
-// only person writing markdown is the admin themselves (auth on every write
-// endpoint), raw marked output is acceptable — XSS risk is limited to admin
-// self-XSS. We DO sanitize link hrefs to strip `javascript:` and `data:` URLs,
-// which is the same protection the old hand-rolled parser had.
+// After rendering, we strip dangerous HTML tags and event handlers.
+// This is a lightweight allowlist sanitizer — not DOMPurify, but provides
+// meaningful defense against stored XSS from post content.
 
 import { marked, Renderer } from "marked";
 
@@ -26,6 +23,18 @@ marked.use({
   renderer,
 });
 
+const DANGEROUS_TAGS = /<\/?(script|iframe|object|embed|form|input|textarea|select|style|link|meta|base|applet)[^>]*>/gi;
+const EVENT_HANDLERS = /\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi;
+const JS_URI = /(href|src|action)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi;
+
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(DANGEROUS_TAGS, "")
+    .replace(EVENT_HANDLERS, "")
+    .replace(JS_URI, "");
+}
+
 export function renderMarkdown(md: string): string {
-  return marked.parse(md, { async: false }) as string;
+  const raw = marked.parse(md, { async: false }) as string;
+  return sanitizeHtml(raw);
 }

@@ -63,8 +63,8 @@ export class CMSRegistry {
     for (const fn of fns) {
       try {
         current = await fn(current);
-      } catch {
-        // Skip failed hooks so one bad plugin doesn't break the page
+      } catch (e) {
+        console.error(`[CMS] Plugin hook "${hookName}" failed:`, e);
       }
     }
     return current;

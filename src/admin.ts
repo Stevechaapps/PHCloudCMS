@@ -40,6 +40,7 @@ export function adminShell(title: string, bodyHtml: string): string {
     "textarea{min-height:320px;font-family:monospace;font-size:0.9rem;line-height:1.5}",
     ".row{display:flex;gap:1rem}",
     ".row .form-group{flex:1}",
+    "@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{display:none}.topbar nav{flex-wrap:wrap;gap:0.5rem;font-size:0.75rem}#editor-wrap{grid-template-columns:1fr!important}table{font-size:0.8rem}th,td{padding:0.4rem 0.5rem}}",
   ].join(" ");
 
   return `<!DOCTYPE html>
@@ -53,7 +54,7 @@ export function adminShell(title: string, bodyHtml: string): string {
 <body>
 <div class="topbar">
 <strong>PHCloud CMS</strong>
-<nav>
+<nav aria-label="Top navigation">
 <a href="/admin">Dashboard</a>
 <a href="/admin/posts">Posts</a>
 <a href="/admin/pages">Pages</a>
@@ -68,7 +69,7 @@ export function adminShell(title: string, bodyHtml: string): string {
 </nav>
 </div>
 <div class="layout">
-<aside class="sidebar">
+<aside class="sidebar" aria-label="Admin sidebar">
 <a href="/admin">Dashboard</a>
 <a href="/admin/posts">All Posts</a>
 <a href="/admin/pages">Pages</a>
@@ -137,7 +138,7 @@ return '<tr>'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
 +'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)})}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
-function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(){location.reload()})}
+function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 loadPosts();</script>`;
 }
 
@@ -170,7 +171,7 @@ tbody.innerHTML=data.results.map(function(p){return '<tr>'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
 +'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)})}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
-function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(){location.reload()})}
+function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 loadPosts();</script>`;
 }
 
@@ -183,9 +184,9 @@ export function newPostBody(): string {
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required /></div>
 <div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required /></div>
 </div>
-<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" /></div>
+<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><textarea id="excerpt" name="excerpt" rows="2"></textarea></div>
 <div class="form-group">
-  <label for="content">Content <span style="color:#6474b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
+  <label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
   <div class="toolbar">
     <button type="button" onclick="mdWrap(event,'**','bold')" title="Bold" aria-label="Bold"><strong>B</strong></button>
     <button type="button" onclick="mdWrap(event,'*','italic')" title="Italic" aria-label="Italic"><em>I</em></button>
@@ -369,7 +370,7 @@ export function editBody(post: {
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(post.title)}" /></div>
 <div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(post.slug)}" /></div>
 </div>
-<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" value="${escAttr(String(post.excerpt ?? ""))}" /></div>
+<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><textarea id="excerpt" name="excerpt" rows="2">${escAttr(String(post.excerpt ?? ""))}</textarea></div>
  <div class="form-group">
   <label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
   <div class="toolbar">
@@ -722,7 +723,7 @@ tbody.innerHTML=pages.map(function(p){return '<tr>'
 +'<a class="btn btn-sm" href="/admin/pages/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
 +'</td></tr>'}).join('')});
-function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/pages/'+id,{method:'DELETE'}).then(function(){location.reload()})}
+function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/pages/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 </script>`;
 }
 
@@ -859,7 +860,7 @@ var slug=slugEl.value||nameEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').rep
 fetch('/api/admin/tags',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameEl.value,slug:slug})}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Added!';nameEl.value='';slugEl.value='';load()}
 else{status.style.color='#dc2626';status.textContent='Error adding tag'}})});
-function del(id){if(!confirm('Delete tag?'))return;fetch('/api/admin/tags/'+id,{method:'DELETE'}).then(function(){load()})}
+function del(id){if(!confirm('Delete tag?'))return;fetch('/api/admin/tags/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');load()}).catch(function(){alert('Delete failed.')})}
 load();
 </script>`;
 }
@@ -915,7 +916,7 @@ export function settingsBody(): string {
 fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){
 document.getElementById('siteName').value=s.site_name;
 document.getElementById('seoDescription').value=s.seo_description;
-if(s.site_logo){document.getElementById('logoPreview').innerHTML='<img src="'+s.site_logo+'" style="max-width:120px;max-height:60px;border:1px solid #e5e7eb;border-radius:4px" />'}});
+if(s.site_logo){var img=document.createElement('img');img.src=s.site_logo;img.style.cssText='max-width:120px;max-height:60px;border:1px solid #e5e7eb;border-radius:4px';document.getElementById('logoPreview').appendChild(img)}});
 document.getElementById('settingsForm').addEventListener('submit',function(e){
 e.preventDefault();
 var status=document.getElementById('status');
@@ -984,7 +985,7 @@ return '<div class="image-card">'
 +'<div class="actions"><button class="btn btn-sm btn-danger" onclick="delImg('+img.id+')">Delete</button></div>'
 +'</div></div>'}).join('');
 if(data.totalPages>1)document.getElementById('imgCount').innerHTML+=' <span style="font-weight:400">Page '+data.page+' of '+data.totalPages+'</span>';});
-function delImg(id){if(!confirm('Delete this image? This action cannot be undone.'))return;fetch('/api/admin/images/'+id,{method:'DELETE'}).then(function(){location.reload()})}
+function delImg(id){if(!confirm('Delete this image? This action cannot be undone.'))return;fetch('/api/admin/images/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 </script>`;
 }
 
