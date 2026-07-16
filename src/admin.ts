@@ -62,7 +62,7 @@ export function adminShell(title: string, bodyHtml: string): string {
 <a href="/admin/nav">Navigation</a>
 <a href="/admin/settings">Settings</a>
 <a href="/" style="margin-left:1rem">View Site</a>
-<a href="#" onclick="logout(event)" style="margin-left:1rem;color:#f87171">Logout</a>
+<button type="button" onclick="logout()" style="margin-left:1rem;background:transparent;border:none;color:#f87171;cursor:pointer;font-size:0.85rem">Logout</button>
 </nav>
 </div>
 <div class="layout">
@@ -80,7 +80,7 @@ export function adminShell(title: string, bodyHtml: string): string {
 <main class="content">${bodyHtml}</main>
 </div>
 <script>
-async function logout(e){e.preventDefault();await fetch('/api/auth/logout',{method:'POST'});window.location.href='/'}
+async function logout(){await fetch('/api/auth/logout',{method:'POST'});window.location.href='/'}
 </script>
 </body>
 </html>`;
@@ -183,7 +183,7 @@ export function newPostBody(): string {
 </div>
 <div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" /></div>
 <div class="form-group">
-  <label>Content <span style="color:#6474b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
+  <label for="content">Content <span style="color:#6474b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
   <div class="toolbar">
     <button type="button" onclick="mdWrap(event,'**','bold')" title="Bold" aria-label="Bold"><strong>B</strong></button>
     <button type="button" onclick="mdWrap(event,'*','italic')" title="Italic" aria-label="Italic"><em>I</em></button>
@@ -369,7 +369,7 @@ export function editBody(post: {
 </div>
 <div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><input type="text" id="excerpt" name="excerpt" value="${escAttr(String(post.excerpt ?? ""))}" /></div>
  <div class="form-group">
-  <label>Content <span style="color:#64748b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
+  <label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span> <button type="button" onclick="togglePreview(event)" class="btn btn-sm" style="float:right" title="Toggle preview" aria-label="Toggle preview">Preview</button></label>
   <div class="toolbar">
     <button type="button" onclick="mdWrap(event,'**','bold')" title="Bold" aria-label="Bold"><strong>B</strong></button>
     <button type="button" onclick="mdWrap(event,'*','italic')" title="Italic" aria-label="Italic"><em>I</em></button>
