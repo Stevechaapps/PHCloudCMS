@@ -40,7 +40,7 @@ export const AVAILABLE_PLUGINS: PluginEntry[] = [
     id: 'tag-cloud',
     name: 'Tag Cloud',
     description: 'Displays a weighted tag cloud on public pages.',
-    category: 'content',
+    category: 'custom',
     version: '1.0.0',
     author: 'PHCloud CMS',
     hooks: ['render:body'],

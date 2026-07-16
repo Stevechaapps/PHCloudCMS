@@ -28,5 +28,8 @@ export async function deleteImage(
   kv?: KVNamespace,
 ): Promise<void> {
   await db.prepare("DELETE FROM images WHERE id = ?").bind(id).run();
-  if (kv) await kv.delete(`img:${id}`);
+  if (kv) {
+    await kv.delete(`img:${id}:data`);
+    await kv.delete(`img:${id}:meta`);
+  }
 }

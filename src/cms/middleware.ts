@@ -17,7 +17,7 @@ export async function onboardingGuard(c: Context, next: Next): Promise<Response 
   const path = new URL(c.req.url).pathname;
 
   // Let the install POST and static assets through unhindered
-  if (path === '/api/install' || path.startsWith('/_next') || path.match(/\.(css|js|png|ico|svg)$/)) {
+  if (path === '/api/install' || path === '/health' || path.startsWith('/_next') || path.match(/\.(css|js|png|ico|svg)$/)) {
     return next();
   }
 

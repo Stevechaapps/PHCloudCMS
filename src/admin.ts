@@ -1,6 +1,8 @@
 // src/admin.ts — Admin panel HTML pages
 // Uses multi-line template strings to stay within TS parser limits.
 
+import { esc, escAttr } from "./cms/escape.js";
+
 // ── Layout shell (sidebar + topbar + content slot) ──────────────────
 
 export function adminShell(title: string, bodyHtml: string): string {
@@ -134,7 +136,7 @@ return '<tr>'
 +'<td style="display:flex;gap:0.4rem">'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
-+'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)}).catch(function(){window.location.href='/admin/login'})
++'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)})}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
 function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(){location.reload()})}
 loadPosts();</script>`;
 }
@@ -167,7 +169,7 @@ tbody.innerHTML=data.results.map(function(p){return '<tr>'
 +'<td style="display:flex;gap:0.4rem">'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
-+'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)}).catch(function(){window.location.href='/admin/login'})
++'</td></tr>'}).join('')});renderAdminPage(data.page,data.totalPages)})}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
 function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(){location.reload()})}
 loadPosts();</script>`;
 }
@@ -384,7 +386,7 @@ export function editBody(post: {
     <button type="button" onclick="mdLine(event,'- ')" title="List item" aria-label="Insert list item">List</button>
   </div>
   <div id="editor-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;min-height:320px">
-    <textarea id="content" name="content" required style="min-height:300px;resize:vertical">${escHtml(post.content)}</textarea>
+    <textarea id="content" name="content" required style="min-height:300px;resize:vertical">${esc(post.content)}</textarea>
     <div class="preview-box" id="preview" style="display:none;min-height:300px"></div>
   </div>
 </div>
@@ -787,7 +789,7 @@ export function editPageBody(page: {
 <div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(page.title)}" /></div>
 <div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(page.slug)}" /></div>
 </div>
-<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" name="content" required>${escHtml(page.content)}</textarea></div>
+<div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Markdown)</span></label><textarea id="content" name="content" required>${esc(page.content)}</textarea></div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" ${checked} /> Published</label></div>
 <div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${escAttr(page.updated_at)}</div>
 <div style="display:flex;gap:0.75rem">
@@ -986,24 +988,4 @@ function delImg(id){if(!confirm('Delete this image? This action cannot be undone
 </script>`;
 }
 
-// ── Escaping helpers ──────────────────────────────────────────────
 
-function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-function escAttr(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}

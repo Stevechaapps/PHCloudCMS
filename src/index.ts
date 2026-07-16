@@ -9,6 +9,7 @@ import { saveImage, getImage, deleteImage } from "./cms/images.js";
 import { AVAILABLE_PLUGINS } from "./plugins/index.js";
 import { getCookie, setCookie } from "hono/cookie";
 import { css as themeCss } from "./themes/default.js";
+import { esc, escXml } from "./cms/escape.js";
 import {
   adminShell,
   dashboardBody,
@@ -46,7 +47,11 @@ function autoExcerpt(content: string): string {
   return text.slice(0, 160) + (text.length > 160 ? "…" : "");
 }
 
-async function publishScheduled(db: D1Database): Promise<void> {
+async function publishScheduled(db: D1Database, cache?: KVNamespace): Promise<void> {
+  if (cache) {
+    const lastRun = await cache.get("cms:lastScheduledPublish");
+    if (lastRun && Date.now() - Number(lastRun) < 60000) return;
+  }
   const now = new Date().toISOString();
   await db
     .prepare(
@@ -54,6 +59,9 @@ async function publishScheduled(db: D1Database): Promise<void> {
     )
     .bind(now)
     .run();
+  if (cache) {
+    await cache.put("cms:lastScheduledPublish", String(Date.now()), { expirationTtl: 120 });
+  }
 }
 
 type Env = {
@@ -70,19 +78,26 @@ app.use("*", onboardingGuard);
 
 // ── Auth ──────────────────────────────────────────────────────────
 app.post("/api/auth/login", async (c) => {
-  let existingSessionId = getCookie(c, SESSION_COOKIE);
+  const { username, password } = await c.req.json<{
+    username?: string;
+    password?: string;
+  }>();
+  const usernameStr = String(username ?? "");
+  const passwordStr = String(password ?? "");
+
+  const existingSessionId = getCookie(c, SESSION_COOKIE);
   if (existingSessionId) {
     const sessionOk = await c.env.CACHE.get(`session:${existingSessionId}`);
     if (sessionOk) {
-      const { username, password } = await c.req.json<{ username?: string; password?: string }>();
-      const admin = await c.env.DB.prepare("SELECT id, password_hash FROM admins WHERE username = ?").bind(String(username ?? "")).first<{ id: number; password_hash: string }>();
-      const valid = admin && (await verifyPassword(String(password ?? ""), admin.password_hash));
+      const admin = await c.env.DB.prepare("SELECT id, password_hash FROM admins WHERE username = ?").bind(usernameStr).first<{ id: number; password_hash: string }>();
+      const valid = admin && (await verifyPassword(passwordStr, admin.password_hash));
       if (valid) {
         setCookie(c, SESSION_COOKIE, existingSessionId, { maxAge: SESSION_TTL, path: "/", httpOnly: true, sameSite: "Lax", secure: true });
         return c.json({ ok: true, sessionId: existingSessionId });
       }
     }
   }
+
   const ip = c.req.header("cf-connecting-ip") ?? "unknown";
   const key = `login:${ip}`;
   const count = await c.env.CACHE.get(key);
@@ -98,19 +113,16 @@ app.post("/api/auth/login", async (c) => {
       );
     }
   }
-  const { username, password } = await c.req.json<{
-    username?: string;
-    password?: string;
-  }>();
+
   const db = c.env.DB;
   const admin = await db
     .prepare("SELECT id, password_hash FROM admins WHERE username = ?")
-    .bind(String(username ?? ""))
+    .bind(usernameStr)
     .first<{ id: number; password_hash: string }>();
 
   const valid =
     admin &&
-    (await verifyPassword(String(password ?? ""), admin.password_hash));
+    (await verifyPassword(passwordStr, admin.password_hash));
 
   if (!valid) {
     const newCount = attempts + 1;
@@ -217,7 +229,7 @@ app.post("/api/admin/posts", async (c) => {
 
   await c.env.CACHE.delete("cms:posts:pub");
   await c.env.CACHE.delete("cms:homepage");
-  return c.json({ id: postId, preview_token: previewToken });
+  return c.json({ ok: true });
 });
 
 app.get("/api/admin/posts", async (c) => {
@@ -280,9 +292,11 @@ app.patch("/api/admin/posts/:id", async (c) => {
   const now = new Date().toISOString();
   const publishAt = body.publish_at || null;
   const published = body.publish_at ? 0 : body.published === true ? 1 : 0;
-  const previewToken = crypto.randomUUID();
   const content = body.content ?? "";
   const excerpt = body.excerpt || autoExcerpt(content);
+
+  const existing = await c.env.DB.prepare("SELECT preview_token FROM posts WHERE id = ?").bind(id).first<{ preview_token: string | null }>();
+  const previewToken = existing?.preview_token || crypto.randomUUID();
 
   await c.env.DB.prepare(
     "UPDATE posts SET title=?, slug=?, content=?, excerpt=?, published=?, publish_at=?, preview_token=?, updated_at=? WHERE id=?",
@@ -327,7 +341,7 @@ app.delete("/api/admin/posts/:id", async (c) => {
     .run();
   await c.env.CACHE.delete("cms:posts:pub");
   await c.env.CACHE.delete("cms:homepage");
-  await c.env.CACHE.delete("cms:config");
+  await c.env.CACHE.delete("cms:settings");
   return c.json({ ok: true });
 });
 
@@ -416,7 +430,7 @@ app.post("/api/install", async (c) => {
       )
       .run();
 
-    await c.env.CACHE.delete("cms:config");
+    await c.env.CACHE.delete("cms:settings");
 
     // Auto-login after install (return JSON, not redirect — fetch() doesn't
     // reliably set cookies from redirect responses on all platforms)
@@ -437,7 +451,7 @@ app.post("/api/install", async (c) => {
     // Surface the real error so install failures are diagnosable from the
     // wizard UI instead of a generic "Check your D1 binding".
     return c.body(
-      JSON.stringify({ error: "install_failed", detail: String(err) }),
+      JSON.stringify({ error: "install_failed", detail: "Installation failed. Check your D1 and KV bindings." }),
       500,
       { "Content-Type": "application/json" },
     );
@@ -650,7 +664,6 @@ app.patch("/api/admin/settings", async (c) => {
       .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('site_logo', ?)")
       .bind(body.site_logo ?? "")
       .run();
-  await c.env.CACHE.delete("cms:config");
   await c.env.CACHE.delete("cms:settings");
   return c.json({ ok: true });
 });
@@ -873,7 +886,7 @@ app.get("/tag/:slug", async (c) => {
   );
   const countRow = await db
     .prepare(
-      "SELECT COUNT(*) as total FROM posts p JOIN post_tags pt ON p.id = pt.post_id WHERE pt.tag_id = ? AND p.published = 1",
+      "SELECT COUNT(*) as total FROM posts p JOIN post_tags pt ON p.id = pt.post_id WHERE pt.tag_id = ? AND p.published = 1 AND p.type = 'post'",
     )
     .bind(tag.id)
     .first<{ total: number }>();
@@ -882,7 +895,7 @@ app.get("/tag/:slug", async (c) => {
 
   const rows = await db
     .prepare(
-      "SELECT p.slug, p.title, p.excerpt, p.updated_at FROM posts p JOIN post_tags pt ON p.id = pt.post_id WHERE pt.tag_id = ? AND p.published = 1 ORDER BY p.updated_at DESC LIMIT ? OFFSET ?",
+      "SELECT p.slug, p.title, p.excerpt, p.updated_at FROM posts p JOIN post_tags pt ON p.id = pt.post_id WHERE pt.tag_id = ? AND p.published = 1 AND p.type = 'post' ORDER BY p.updated_at DESC LIMIT ? OFFSET ?",
     )
     .bind(tag.id, 10, (page - 1) * 10)
     .all<{
@@ -892,7 +905,7 @@ app.get("/tag/:slug", async (c) => {
       updated_at: string;
     }>();
 
-  const siteName = await getCached(c, "cms:config", 600, async () => {
+  const siteName = await getCached(c, "cms:settings", 600, async () => {
     return (await getSetting(db, "site_name")) ?? "My Site";
   });
   const bodyHtml =
@@ -980,7 +993,7 @@ app.post("/api/admin/nav", async (c) => {
   )
     .bind(JSON.stringify(items))
     .run();
-  await c.env.CACHE.delete("cms:config");
+  await c.env.CACHE.delete("cms:settings");
   return c.json({ ok: true });
 });
 
@@ -1123,7 +1136,7 @@ app.get("/:slug?", async (c) => {
   const db = c.env.DB;
   const slug = c.req.param("slug") ?? "";
 
-  await publishScheduled(db);
+  await publishScheduled(db, c.env.CACHE);
 
   const [settings, navVal, plugins] = await Promise.all([
     getCached(c, "cms:settings", 600, async () => await getAllSettings(db)) as Promise<Record<string, string>>,
@@ -1451,21 +1464,4 @@ function renderPagination(
 function extractFirstImage(content: string, origin: string): string | null {
   const match = content.match(/!\[.*?\]\((\/img\/\d+)\)/);
   return match ? origin + match[1] : null;
-}
-
-function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function escXml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }
