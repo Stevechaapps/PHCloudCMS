@@ -6,10 +6,9 @@ import { Context, Next } from 'hono';
 import { CMSRegistry } from './registry.js';
 import { getSetting, isConfigured } from './d1.js';
 
-export type Env = {
-  DB: D1Database;
-  CACHE: KVNamespace;
-};
+// Env is defined once in ./env.ts and re-exported here so existing
+// import paths (`from "./cms/middleware.js"`) keep working.
+export type { Env } from './env.js';
 
 // ── Onboarding guard ──────────────────────────────────────────────
 

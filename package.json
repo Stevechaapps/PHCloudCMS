@@ -10,8 +10,7 @@
     "lint:fix": "prettier --write src/"
   },
   "dependencies": {
-    "hono": "^4.12.29",
-    "marked": "^12.0.2"
+    "hono": "^4.12.29"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260712.1",

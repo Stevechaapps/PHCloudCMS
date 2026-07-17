@@ -1,7 +1,5 @@
-export type Env = {
-  DB: D1Database;
-  CACHE: KVNamespace;
-};
+// src/cms/d1.ts — D1 schema, migrations, and settings access.
+// Shared runtime types (Env) live in ./env.ts.
 
 // Schema — ordered so tables exist before indexes reference them.
 // idempotent; safe to re-run on every new database.

@@ -55,7 +55,7 @@
 
 ### Lightweight Ethos
 ```
-✅ "~14 files. ~60KB bundle. Two dependencies (hono, marked)."
+✅ "~14 files. ~40KB bundle. One dependency (hono)."
 ❌ "Enterprise-grade scalable architecture"
 ```
 

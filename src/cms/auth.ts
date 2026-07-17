@@ -1,5 +1,10 @@
-// src/cms/auth.ts — Password hashing using Web Crypto (PBKDF2).
+// src/cms/auth.ts — Password hashing using Web Crypto (PBKDF2)
+// and the session-gate helper used by every admin API route.
 // No external deps — runs natively in Workers/V8 isolates.
+
+import type { Context } from 'hono';
+import { getCookie } from 'hono/cookie';
+import { SESSION_COOKIE } from './env.js';
 
 // 100K iterations — OWASP recommends 600K for SHA-256, but Workers free tier
 // has a 10ms CPU limit. 100K is a 10x improvement over the previous 10K
@@ -41,4 +46,22 @@ export async function verifyPassword(password: string, stored: string): Promise<
   let diff = 0;
   for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
   return diff === 0;
+}
+
+// ── Session gate ───────────────────────────────────────────────────
+// Returns the authenticated admin's id, or a 401 Response the caller
+// returns verbatim. Idiom: `const auth = await requireAuth(c);
+// if (auth instanceof Response) return auth;`
+export async function requireAuth(c: Context): Promise<number | Response> {
+  const sessionId = getCookie(c, SESSION_COOKIE);
+  if (!sessionId)
+    return c.body(JSON.stringify({ error: 'Unauthorized' }), 401, {
+      'Content-Type': 'application/json',
+    });
+  const val = await c.env.CACHE.get(`session:${sessionId}`);
+  if (!val)
+    return c.body(JSON.stringify({ error: 'Invalid session' }), 401, {
+      'Content-Type': 'application/json',
+    });
+  return parseInt(val, 10);
 }

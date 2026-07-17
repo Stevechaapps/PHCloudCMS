@@ -47,3 +47,15 @@ export const AVAILABLE_PLUGINS: PluginEntry[] = [
     init: initTagCloudPlugin,
   },
 ];
+
+// Wire the active plugins into a fresh per-request registry. Public
+// handlers call this after loading the active map from KV.
+export function initActivePlugins(
+  registry: CMSRegistry,
+  active: Record<string, boolean>,
+): void {
+  for (const p of AVAILABLE_PLUGINS) {
+    if (active[p.id]) p.init(registry);
+  }
+}
+

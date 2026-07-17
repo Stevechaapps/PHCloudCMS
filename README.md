@@ -3,7 +3,7 @@
 **The world's lightest CMS** — runs entirely free on Cloudflare's free tier.
 
 ```
-~60KB bundle · Two dependencies (hono, marked) · Free forever on Cloudflare
+~40KB bundle · One dependency (hono) · Free forever on Cloudflare
 ```
 
 ---
@@ -317,7 +317,7 @@ npx tsc --noEmit
 | Auth | PBKDF2 (Web Crypto API) |
 | Entry Point | `src/index.ts` |
 
-**Two runtime dependencies** — `hono` (router) and `marked` (markdown renderer).
+**One runtime dependency** — `hono` (router). Content is authored as rich text in a `contentEditable` editor and sanitized by a built-in allowlist HTML sanitizer (`src/cms/sanitize.ts`) on both write and read — no markdown parser, no DOMPurify.
 
 ---
 
