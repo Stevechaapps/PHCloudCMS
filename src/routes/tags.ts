@@ -42,7 +42,7 @@ export function registerTagRoutes(app: App): void {
 
   app.get("/admin/tags", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("Tags", tagsBody()));
   });
 }

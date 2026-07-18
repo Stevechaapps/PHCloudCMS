@@ -12,7 +12,20 @@ import { AVAILABLE_PLUGINS } from "../plugins/index.js";
 export function registerInstallRoute(app: App): void {
   app.post("/api/install", async (c) => {
     const db = c.env.DB;
-    if (await isConfigured(db)) {
+    // isConfigured() reads the `settings` table, but migrate() (below) is what
+    // creates it — so on a fresh or freshly-wiped D1 this SELECT throws
+    // "no such table: settings". That call sits outside the try/catch below, so
+    // the throw escapes as a raw 500 (= the "Internal Server Error" the wizard
+    // showed) and the install never runs. A config we can't read is, by
+    // definition, not configured — treat the throw as false and let migrate()
+    // create the table, then install proceeds normally.
+    let configured = false;
+    try {
+      configured = await isConfigured(db);
+    } catch {
+      configured = false;
+    }
+    if (configured) {
       return c.json({ error: "Already configured" }, 409);
     }
     const lockKey = "install:lock";

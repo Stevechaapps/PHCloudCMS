@@ -102,19 +102,19 @@ export function registerPageRoutes(app: App): void {
   // ── Admin pages (HTML) ───────────────────────────────────────────
   app.get("/admin/pages", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("Pages", pagesBody()));
   });
 
   app.get("/admin/pages/new", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("New Page", newPageBody()));
   });
 
   app.get("/admin/pages/edit/:id", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     const id = c.req.param("id");
     const page = await c.env.DB.prepare(
       "SELECT id, title, slug, content, published, updated_at FROM posts WHERE id = ? AND type = 'page'",

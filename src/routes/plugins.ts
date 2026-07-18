@@ -25,7 +25,7 @@ export function registerPluginRoutes(app: App): void {
 
   app.get("/admin/plugins", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     const rows = await c.env.DB.prepare("SELECT id, active FROM plugins").all<{
       id: string;
       active: number;

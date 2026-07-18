@@ -34,7 +34,7 @@ export function registerNavRoutes(app: App): void {
 
   app.get("/admin/nav", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("Navigation", navBody()));
   });
 }

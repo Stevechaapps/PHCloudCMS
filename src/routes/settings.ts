@@ -45,7 +45,7 @@ export function registerSettingsRoutes(app: App): void {
 
   app.get("/admin/settings", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("Settings", settingsBody()));
   });
 }

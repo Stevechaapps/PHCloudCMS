@@ -204,19 +204,19 @@ export function registerPostRoutes(app: App): void {
 
   app.get("/admin/posts", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("Posts", postsBody()));
   });
 
   app.get("/admin/new", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     return c.html(adminShell("New Post", newPostBody()));
   });
 
   app.get("/admin/edit/:id", async (c) => {
     const auth = await requireAuth(c);
-    if (auth instanceof Response) return auth;
+    if (auth instanceof Response) return c.redirect("/admin/login");
     const id = c.req.param("id");
     const post = await c.env.DB.prepare("SELECT * FROM posts WHERE id = ?")
       .bind(id)

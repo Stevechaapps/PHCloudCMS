@@ -87,8 +87,13 @@ export function registerAuthRoutes(app: App): void {
     return c.json({ ok: true });
   });
 
-  app.get("/admin/login", (c) => {
-    if (getCookie(c, SESSION_COOKIE)) return c.redirect("/admin");
+  app.get("/admin/login", async (c) => {
+    // Only skip the form if the session is actually valid in KV. A stale
+    // cookie (KV TTL'd, cleared, or from a different env) must NOT bounce to
+    // /admin — /admin's auth gate would then return 401 and push straight
+    // back here, producing a /admin ↔ /admin/login reload loop.
+    const sid = getCookie(c, SESSION_COOKIE);
+    if (sid && (await c.env.CACHE.get(`session:${sid}`))) return c.redirect("/admin");
     return c.html(loginForm());
   });
 }
