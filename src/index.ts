@@ -17,6 +17,7 @@ import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerImageRoutes } from "./routes/images.js";
 import { registerPluginRoutes } from "./routes/plugins.js";
 import { registerInstallRoute } from "./routes/install.js";
+import { registerWipeRoute } from "./routes/wipe.js";
 import { registerPublicRoutes } from "./routes/public.js";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -50,6 +51,7 @@ registerSettingsRoutes(app);
 registerImageRoutes(app);
 registerPluginRoutes(app);
 registerInstallRoute(app);
+registerWipeRoute(app);
 registerPublicRoutes(app);
 
 export default app;

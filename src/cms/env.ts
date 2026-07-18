@@ -6,6 +6,11 @@ import type { Context, Hono } from "hono";
 export type Env = {
   DB: D1Database;
   CACHE: KVNamespace;
+  // Optional secret for the emergency wipe endpoint (POST /api/admin/wipe).
+  // Lets a locked-out admin reset the site without a valid session, so a
+  // corrupted/stale session (the /admin <-> /admin/login loop) can't lock
+  // you out of recovery. Set as a Cloudflare Worker secret, not in source.
+  WIPE_TOKEN?: string;
 };
 
 // Shared app type — every route module's register() takes this, so the

@@ -31,7 +31,7 @@ var h='';if(page>1)h+='<a href="?page='+(page-1)+'" style="padding:0.3rem 0.6rem
 for(var i=1;i<=totalPages;i++){if(i===page)h+='<span style="padding:0.3rem 0.6rem;background:#0f172a;color:white;border-radius:4px;font-weight:600;font-size:0.85rem">'+i+'</span>';else h+='<a href="?page='+i+'" style="padding:0.3rem 0.6rem;border:1px solid #e5e7eb;border-radius:4px;text-decoration:none;color:#3b82f6;font-size:0.85rem">'+i+'</a>'}
 if(page<totalPages)h+='<a href="?page='+(page+1)+'" style="padding:0.3rem 0.6rem;border:1px solid #e5e7eb;border-radius:4px;text-decoration:none;color:#3b82f6;font-size:0.85rem">Next →</a>';nav.innerHTML=h}
 function loadPosts(){var page=parseInt(location.search.match(/[?&]page=(\\d+)/)||[,'1'],10);
-fetch('/api/admin/posts?page='+page).then(function(r){return r.json()}).then(function(data){
+fetch('/api/admin/posts?page='+page).then(function(r){if(r.status===401){window.location.href='/admin/login';return null;}if(!r.ok){document.getElementById('posts').innerHTML='<tr><td colspan="5" style="text-align:center;color:#dc2626">Failed to load posts. Reload to retry.</td></tr>';return null;}return r.json();}).then(function(data){if(!data)return;
 function ea(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 document.getElementById('total').textContent=data.total;
 document.getElementById('pub').textContent=data.results.filter(function(p){return p.published}).length;
@@ -46,7 +46,7 @@ return '<tr>'
 +'<td style="display:flex;gap:0.4rem">'
 +'<a class="btn btn-sm" href="/admin/edit/'+p.id+'">Edit</a>'
 +'<button class="btn btn-sm btn-danger" onclick="del('+p.id+')">Delete</button>'
-+'</td></tr>'}).join('');renderAdminPage(data.page,data.totalPages)}).catch(function(e){console.error('loadPosts failed',e);window.location.href='/admin/login'})
++'</td></tr>'}).join('');renderAdminPage(data.page,data.totalPages)}).catch(function(e){console.error('loadPosts failed',e);document.getElementById('posts').innerHTML='<tr><td colspan="5" style="text-align:center;color:#dc2626">Failed to load posts.</td></tr>';})
 function del(id){if(!confirm('Delete?'))return;fetch('/api/admin/posts/'+id,{method:'DELETE'}).then(function(r){if(!r.ok)throw new Error('fail');location.reload()}).catch(function(){alert('Delete failed.')})}
 }
 loadPosts();</script>`;
