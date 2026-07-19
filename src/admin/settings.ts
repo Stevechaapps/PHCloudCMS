@@ -4,20 +4,21 @@ export function settingsBody(): string {
   return `<h2 style="margin-bottom:1.5rem">Settings</h2>
 <form id="settingsForm" style="max-width:600px">
 <div class="form-group"><label for="siteName">Site Name</label><input type="text" id="siteName" required /></div>
-<div class="form-group"><label for="seoDescription">Site Description <span style="color:#64748b;font-weight:400">(meta description)</span></label><input type="text" id="seoDescription" /></div>
+<div class="form-group"><label for="seoDescription">Site Description <span style="color:var(--ad-muted);font-weight:400">(meta description)</span></label><input type="text" id="seoDescription" /></div>
 <div class="form-group">
 <label>Site Logo</label>
 <div id="logoPreview" style="margin-bottom:0.5rem"></div>
-<input type="file" id="logoFile" accept="image/*" />
+<input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+<p style="color:var(--ad-muted);font-size:0.8rem;margin-top:0.4rem">Recommended: a wide, short logo (about <strong>600×200px</strong>, PNG with transparency). Shown in your site header and as the social-share image. Shrunk to 600px wide; use a wider banner for the social preview.</p>
 </div>
 <button type="submit" class="btn btn-primary">Save Settings</button>
 <div id="status" style="margin-top:1rem;font-size:0.9rem" aria-live="polite" role="status"></div>
 </form>
 
 <hr style="border:none;border-top:1px solid #e5e7eb;margin:2.5rem 0" />
-<div style="max-width:600px;border:1px solid #fca5a5;background:#fef2f2;border-radius:6px;padding:1.25rem">
-<h3 style="color:#b91c1c;margin-bottom:0.5rem">Reset Site</h3>
-<p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem">Erases all posts, pages, tags, images, settings, and admin accounts, then returns you to the setup wizard. This cannot be undone.</p>
+<div style="max-width:600px;border:1px solid var(--ad-warn-bd);background:var(--ad-warn-bg);border-radius:6px;padding:1.25rem">
+<h3 style="color:var(--ad-warn-tx);margin-bottom:0.5rem">Reset Site</h3>
+<p style="color:var(--ad-muted);font-size:0.9rem;margin-bottom:1rem">Erases all posts, pages, tags, images, settings, and admin accounts, then returns you to the setup wizard. This cannot be undone.</p>
 <button type="button" id="resetBtn" class="btn" style="background:#dc2626;color:white">Reset & Start Over</button>
 <span id="resetStatus" style="margin-left:0.75rem;font-size:0.9rem"></span>
 </div>
@@ -25,7 +26,7 @@ export function settingsBody(): string {
 fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s){
 document.getElementById('siteName').value=s.site_name;
 document.getElementById('seoDescription').value=s.seo_description;
-if(s.site_logo){var img=document.createElement('img');img.src=s.site_logo;img.style.cssText='max-width:120px;max-height:60px;border:1px solid #e5e7eb;border-radius:4px';document.getElementById('logoPreview').appendChild(img)}});
+if(s.site_logo){var img=document.createElement('img');img.src=s.site_logo;img.style.cssText='max-width:120px;max-height:60px;border:1px solid var(--ad-card-bd);border-radius:4px';document.getElementById('logoPreview').appendChild(img)}});
 document.getElementById('settingsForm').addEventListener('submit',function(e){
 e.preventDefault();
 var status=document.getElementById('status');

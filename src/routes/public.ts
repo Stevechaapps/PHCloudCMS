@@ -137,6 +137,7 @@ export function registerPublicRoutes(app: App): void {
     )) as Record<string, string>;
     const siteName = settings.site_name ?? "My Site";
     const seoDescription = settings.seo_description ?? "";
+    const siteLogo = settings.site_logo ?? null;
     const safeQ = q.replace(/%/g, "\\%").replace(/_/g, "\\_");
 
     let bodyHtml = "<h1>Search</h1>";
@@ -200,7 +201,7 @@ export function registerPublicRoutes(app: App): void {
       },
     });
     return c.html(
-      shellFull(siteName, headPayload.markup as string, bodyHtml, []),
+      shellFull(siteName, headPayload.markup as string, bodyHtml, [], siteLogo),
     );
   });
 
@@ -240,9 +241,20 @@ export function registerPublicRoutes(app: App): void {
         updated_at: string;
       }>();
 
-    const siteName = await getCached(c, "cms:settings", 600, async () => {
-      return (await getSetting(db, "site_name")) ?? "My Site";
-    });
+    // Cache the full settings OBJECT under "cms:settings", matching the
+    // catch-all/feed/search routes. Caching a bare string here used the same
+    // key with a different value type: if the homepage warmed the cache first
+    // (object) this route read back an object, passed it to esc() →
+    // "x.replace is not a function" → 500 on every /tag/:slug. Same key,
+    // same type, same fetcher kills the race. (ponytail: fix once at the key.)
+    const settings = (await getCached(
+      c,
+      "cms:settings",
+      600,
+      async () => await getAllSettings(db),
+    )) as Record<string, string>;
+    const siteName = settings.site_name ?? "My Site";
+    const siteLogo = settings.site_logo ?? null;
     const bodyHtml =
       '<h1 style="margin-bottom:1rem">' +
       esc(tag.name) +
@@ -273,7 +285,7 @@ export function registerPublicRoutes(app: App): void {
       },
     });
     return c.html(
-      shellFull(siteName, headPayload.markup as string, bodyHtml, []),
+      shellFull(siteName, headPayload.markup as string, bodyHtml, [], siteLogo),
     );
   });
 
@@ -423,7 +435,7 @@ export function registerPublicRoutes(app: App): void {
       });
       bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
       return c.html(
-        shellFull(siteName, headPayload.markup as string, bodyHtml, nav),
+        shellFull(siteName, headPayload.markup as string, bodyHtml, nav, siteLogo),
       );
     }
 
@@ -479,7 +491,7 @@ export function registerPublicRoutes(app: App): void {
     });
     bodyHtml = (bodyPayload.bodyHtml as string) ?? bodyHtml;
     return c.html(
-      shellFull(siteName, headPayload.markup as string, bodyHtml, nav),
+      shellFull(siteName, headPayload.markup as string, bodyHtml, nav, siteLogo),
     );
   });
 }

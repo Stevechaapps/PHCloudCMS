@@ -35,7 +35,7 @@ export function pluginsBody(
 
   var html = '<h2 style="margin-bottom:0.5rem">Plugins</h2>';
   html +=
-    '<p style="color:#64748b;margin-bottom:2rem;font-size:0.9rem">Toggle plugins on or off. Changes take effect immediately.</p>';
+    '<p style="color:var(--ad-muted);margin-bottom:2rem;font-size:0.9rem">Toggle plugins on or off. Changes take effect immediately.</p>';
 
   for (var c = 0; c < PLUGIN_CATEGORIES.length; c++) {
     var cat = PLUGIN_CATEGORIES[c];
@@ -43,29 +43,29 @@ export function pluginsBody(
     if (!plugins || !plugins.length) continue;
 
     html +=
-      '<h3 style="margin:2rem 0 1rem;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b">';
+      '<h3 style="margin:2rem 0 1rem;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ad-muted)">';
     html += esc(cat.label) + "</h3>";
     html +=
-      '<div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:1.5rem">';
+      '<div style="background:var(--ad-card);border:1px solid var(--ad-card-bd);border-radius:6px;overflow:hidden;margin-bottom:1.5rem">';
 
     for (var j = 0; j < plugins.length; j++) {
       var pl = plugins[j];
       var isActive = activePluginIds.has(pl.id);
       html +=
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;';
-      html += 'border-bottom:1px solid #f1f5f9">';
+      html += 'border-bottom:1px solid var(--ad-row-bd)">';
       html += '<div style="flex:1;min-width:0">';
       html += '<div style="font-weight:600;font-size:0.95rem">' + esc(pl.name);
       html +=
-        ' <span style="font-weight:400;color:#94a3b8;font-size:0.8rem">v' +
+        ' <span style="font-weight:400;color:var(--ad-muted);font-size:0.8rem">v' +
         esc(pl.version) +
         "</span></div>";
       html +=
-        '<div style="color:#64748b;font-size:0.85rem;margin-top:0.2rem">' +
+        '<div style="color:var(--ad-muted);font-size:0.85rem;margin-top:0.2rem">' +
         esc(pl.description) +
         "</div>";
       html +=
-        '<div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem">by ' +
+        '<div style="color:var(--ad-muted);font-size:0.75rem;margin-top:0.3rem">by ' +
         esc(pl.author);
       html += " · hooks: " + esc(pl.hooks.join(", ")) + "</div>";
       html += "</div>";
@@ -79,7 +79,7 @@ export function pluginsBody(
       html += isActive ? " checked" : "";
       html += " />";
       html +=
-        '<span style="font-size:0.85rem;color:#64748b">' +
+        '<span style="font-size:0.85rem;color:var(--ad-muted)">' +
         (isActive ? "Active" : "Inactive") +
         "</span>";
       html += "</label></div></div>";
@@ -90,7 +90,7 @@ export function pluginsBody(
 
   if (!availablePlugins.length) {
     html +=
-      '<div style="text-align:center;padding:3rem;color:#64748b">No plugins available.';
+      '<div style="text-align:center;padding:3rem;color:var(--ad-muted)">No plugins available.';
     html +=
       " Add files to <code>src/plugins/</code> and list them in <code>src/plugins/index.ts</code>.</div>";
   }

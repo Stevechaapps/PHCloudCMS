@@ -8,7 +8,7 @@ export function tagsBody(): string {
 <div style="display:flex;align-items:flex-end"><button type="submit" class="btn btn-primary">Add</button></div>
 </form>
 <div id="status" style="margin-bottom:1rem;font-size:0.9rem"></div>
-<div style="background:white;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden">
+<div style="background:var(--ad-card);border:1px solid var(--ad-card-bd);border-radius:6px;overflow:hidden">
 <table><thead><tr><th>Name</th><th>Slug</th><th></th></tr></thead>
 <tbody id="tags"></tbody>
 </table></div>
@@ -21,10 +21,10 @@ slugEl.value=nameEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-
 function load(){fetch('/api/admin/tags').then(function(r){return r.json()}).then(function(tags){
 function ea(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 var tbody=document.getElementById('tags');
-if(!tags.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b">No tags yet.</td></tr>';return}
+if(!tags.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--ad-muted)">No tags yet.</td></tr>';return}
 tbody.innerHTML=tags.map(function(t){return '<tr>'
 +'<td><strong>'+ea(t.name)+'</strong></td>'
-+'<td style="color:#64748b">'+ea(t.slug)+'</td>'
++'<td style="color:var(--ad-muted)">'+ea(t.slug)+'</td>'
 +'<td><button class="btn btn-sm btn-danger" onclick="del('+t.id+')">Delete</button></td></tr>'}).join('')})}
 document.getElementById('tagForm').addEventListener('submit',function(e){
 e.preventDefault();

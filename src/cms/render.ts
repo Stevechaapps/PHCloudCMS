@@ -54,6 +54,7 @@ export function shellFull(
   headMarkup: string,
   bodyHtml: string,
   nav: NavItem[],
+  siteLogo: string | null = null,
 ): string {
   const navHtml = nav
     .map((n) => '<a href="' + esc(n.url) + '">' + esc(n.label) + "</a>")
@@ -70,13 +71,21 @@ export function shellFull(
     headMarkup +
     THEME_INIT_SCRIPT +
     '</head><body><a href="#main" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0">Skip to content</a><header><div class="inner"><a href="/" class="site-name">' +
-    esc(siteName) +
+    (siteLogo
+      ? '<img src="' + esc(siteLogo) + '" alt="' + esc(siteName) + '" style="height:32px;width:auto;vertical-align:middle;max-width:180px"/>'
+      : esc(siteName)) +
     '</a><nav><form action="/search" method="get" class="search-wrap" role="search"><input type="text" name="q" placeholder="Search..." aria-label="Search site"></form>' +
     navHtml +
+    // Toggle is a sibling of <nav>, not inside it: the mobile CSS hides
+    // header nav (display:none under 768px) to save space, so a toggle
+    // inside the nav would vanish on phones. As a direct child of .inner
+    // it stays reachable; .inner's space-between gives logo-left /
+    // nav-center / toggle-right on desktop.
+    "</nav>" +
     THEME_TOGGLE_BTN +
-    '</nav></div></header><main id="main">' +
+    '</div></header><main id="main">' +
     bodyHtml +
-    '</main><footer><div class="inner"><p class="colophon">Powered by <a href="https://github.com/Stevechaapps/phcloudcms" target="_blank" rel="noopener">PHCloud CMS</a> on <a href="https://cloudflare.com" target="_blank" rel="noopener">Cloudflare</a></p></div></footer>' +
+    '</main><footer><div class="inner"><p class="colophon">Powered by <a href="https://github.com/Stevechaapps/phcloudcms" target="_blank" rel="noopener">PHCloud CMS</a> on <a href="https://cloudflare.com" target="_blank" rel="noopener">Cloudflare</a> · <a href="/admin" rel="nofollow">Manage</a></p></div></footer>' +
     THEME_TOGGLE_SCRIPT +
     '</body></html>'
   );

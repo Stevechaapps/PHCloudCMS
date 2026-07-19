@@ -11,6 +11,13 @@
 // Schedule-for-later checkbox toggle (DOM: #schedule, #publish_at, #published).
 export const SCHEDULE_TOGGLE_SCRIPT = `function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}`;
 
+// Scheduled-post datetime round-trips. datetime-local gives a timezone-naive
+// local string (e.g. "2026-07-19T15:00"); the server compares publish_at to a
+// UTC ISO now(), so a naive local string publishes at the wrong wall-clock
+// time (off by the user's UTC offset). Convert to UTC ISO on submit, and
+// format the stored UTC value back into the local box on edit load.
+export const SCHEDULER_SCRIPT = `function phIso(localVal){if(!localVal)return null;var d=new Date(localVal);if(isNaN(d.getTime()))return null;return d.toISOString()}function phLocalFromUtc(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';function p(n){return String(n).padStart(2,'0')}return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}`;
+
 // Toolbar commands + a selection save/restore used across the async image
 // upload. Toolbar buttons call these from onmousedown (with preventDefault so
 // clicking a button never blurs the editable and drops the selection the
@@ -25,7 +32,7 @@ function rteRestore(c,r){c.focus();var s=window.getSelection();s.removeAllRanges
 // can tell what's active (Bold/Italic pressed, current block is h2/h3/blockquote,
 // caret is in a list). aria-pressed + the .toolbar button[aria-pressed="true"]
 // rule in shell.ts give the visual "on" state every WYSIWYG editor shows.
-function rteSync(){var c=document.getElementById('content');if(!c)return;var node=null;try{node=window.getSelection().getRangeAt(0).startContainer}catch(e){}if(!node||(node!==c&&!c.contains(node))){rteClear();return}rteSet('Bold',qState('bold'));rteSet('Italic',qState('italic'));rteSet('Insert list item',qState('insertUnorderedList'));var blk=String(qVal('formatBlock')||'').toLowerCase().replace(/[<>]/g,'');rteSet('Heading 2',blk==='h2');rteSet('Heading 3',blk==='h3');rteSet('Insert blockquote',blk==='blockquote')}
+function rteSync(){var c=document.getElementById('content');if(!c)return;var node=null;try{node=window.getSelection().getRangeAt(0).startContainer}catch(e){}if(!node||(node!==c&&!c.contains(node))){rteClear();return}rteSet('Bold',qState('bold'));rteSet('Italic',qState('italic'));rteSet('Insert list item',qState('insertUnorderedList'));rteSet('Numbered list',qState('insertOrderedList'));var blk=String(qVal('formatBlock')||'').toLowerCase().replace(/[<>]/g,'');rteSet('Heading 2',blk==='h2');rteSet('Heading 3',blk==='h3');rteSet('Insert blockquote',blk==='blockquote')}
 function qState(c){try{return document.queryCommandState(c)}catch(e){return false}}
 function qVal(c){try{return document.queryCommandValue(c)}catch(e){return ''}}
 function rteSet(label,on){var b=document.querySelector('.toolbar button[aria-label="'+label+'"]');if(!b)return;b.setAttribute('aria-pressed',on?'true':'false')}

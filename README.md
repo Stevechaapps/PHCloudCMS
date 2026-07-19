@@ -197,8 +197,8 @@ npm run dev          # wrangler dev on http://localhost:8787
 Scripts:
 
 ```bash
-npm run dev        # generate theme index + wrangler dev
-npm run build      # generate theme index + tsc --noEmit (type-check)
+npm run dev        # wrangler dev on http://localhost:8787
+npm run build      # tsc --noEmit (type-check)
 npm run lint       # prettier --check src/
 npm run lint:fix   # prettier --write src/
 ```
@@ -212,7 +212,7 @@ src/
   admin/            admin UI: shell, dashboard, posts, pages, tags, nav, images, plugins, settings, editor, login
   routes/           HTTP routes by domain: posts, pages, tags, nav, images, plugins, install, wipe, public, settings, auth
   plugins/          built-in plugins: seo, sitemap, tag-cloud
-  themes/           default.ts (single static theme) + generated index.ts
+  themes/           default.ts (single static theme, compiled into the Worker)
 ```
 
 Routing lives in `src/routes/*`; the admin HTML bodies live in `src/admin/*`; the framework glue (auth, DB, sanitization, plugin registry) lives in `src/cms/*`. The editor's inline JavaScript is shared in `src/admin/editor.ts`.
@@ -222,7 +222,6 @@ Routing lives in `src/routes/*`; the admin HTML bodies live in `src/admin/*`; th
 There is a single static theme file at [`src/themes/default.ts`](src/themes/default.ts). Themes are **not** plugins and there is no runtime theme registry — the theme is compiled into the Worker.
 
 ```typescript
-export const layout = 'centered';   // reserved — only 'centered' is implemented
 export const css = `…`;
 ```
 

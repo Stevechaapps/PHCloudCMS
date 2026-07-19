@@ -5,6 +5,11 @@ import { esc } from "../cms/escape.js";
 export function adminShell(title: string, bodyHtml: string): string {
   const styles = [
     "*{margin:0;padding:0;box-sizing:border-box}",
+    // Admin palette. Inline styles across admin pages reference these via
+    // var(--ad-…) so muted text / cards / surfaces flip correctly in dark mode
+    // (the inline literal would otherwise stay light on a dark surface).
+    ":root{--ad-card:#fff;--ad-card-bd:#e5e7eb;--ad-row-bd:#f1f5f9;--ad-muted:#475569;--ad-cancel:#e5e7eb;--ad-cancel-text:#1e293b;--ad-active:#0f172a;--ad-link:#3b82f6;--ad-warn-bg:#fef2f2;--ad-warn-bd:#fca5a5;--ad-warn-tx:#b91c1c}",
+    "@media(prefers-color-scheme:dark){:root{--ad-card:#1e293b;--ad-card-bd:#334155;--ad-row-bd:#334155;--ad-muted:#94a3b8;--ad-cancel:#334155;--ad-cancel-text:#f1f5f9;--ad-active:#f97316;--ad-link:#60a5fa;--ad-warn-bg:rgba(220,38,38,.12);--ad-warn-bd:rgba(248,113,113,.35);--ad-warn-tx:#fca5a5}}",
     "body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b}",
     ".topbar{background:#0f172a;color:white;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between}",
     ".topbar a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem}",
