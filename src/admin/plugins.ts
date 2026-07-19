@@ -1,6 +1,6 @@
 // src/admin/plugins.ts — plugin manager admin page body.
 
-import { esc, escAttr } from "../cms/escape.js";
+import { esc } from "../cms/escape.js";
 
 var PLUGIN_CATEGORIES = [
   { key: "seo", label: "SEO" },
@@ -74,7 +74,7 @@ export function pluginsBody(
         '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">';
       html +=
         '<input type="checkbox" class="plugin-toggle" data-plugin="' +
-        escAttr(pl.id) +
+        esc(pl.id) +
         '"';
       html += isActive ? " checked" : "";
       html += " />";

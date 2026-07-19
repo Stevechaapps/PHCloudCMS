@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/generate-theme-index.js && wrangler dev",
-    "build": "node scripts/generate-theme-index.js && tsc --noEmit",
+    "dev": "wrangler dev",
+    "build": "tsc --noEmit",
     "lint": "prettier --check src/",
     "lint:fix": "prettier --write src/"
   },

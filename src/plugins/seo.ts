@@ -2,6 +2,7 @@
 // Hooks into the render:head pipeline to inject meta tags, Open Graph, and canonical URLs.
 
 import type { PluginHook, CMSRegistry } from '../cms/registry.js';
+import { esc } from '../cms/escape.js';
 
 export function initSEOPlugin(registry: CMSRegistry): void {
   registry.register('render:head', seoHook);
@@ -18,20 +19,20 @@ const seoHook: PluginHook = (payload) => {
   const image    = meta.image ?? '';
 
   const tags = [
-    `<title>${escapeHtml(title)}</title>`,
-    `<meta name="description" content="${escapeHtml(desc)}" />`,
-    `<link rel="canonical" href="${escapeHtml(url)}" />`,
+    `<title>${esc(title)}</title>`,
+    `<meta name="description" content="${esc(desc)}" />`,
+    `<link rel="canonical" href="${esc(url)}" />`,
     // Open Graph
-    `<meta property="og:title" content="${escapeHtml(title)}" />`,
-    `<meta property="og:description" content="${escapeHtml(desc)}" />`,
-    `<meta property="og:url" content="${escapeHtml(url)}" />`,
-    ...(image ? [`<meta property="og:image" content="${escapeHtml(image)}" />`] : []),
+    `<meta property="og:title" content="${esc(title)}" />`,
+    `<meta property="og:description" content="${esc(desc)}" />`,
+    `<meta property="og:url" content="${esc(url)}" />`,
+    ...(image ? [`<meta property="og:image" content="${esc(image)}" />`] : []),
     `<meta property="og:type" content="website" />`,
-    `<meta property="og:site_name" content="${escapeHtml(siteName)}" />`,
+    `<meta property="og:site_name" content="${esc(siteName)}" />`,
     // Twitter Card
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
-    `<meta name="twitter:description" content="${escapeHtml(desc)}" />`,
+    `<meta name="twitter:title" content="${esc(title)}" />`,
+    `<meta name="twitter:description" content="${esc(desc)}" />`,
   ].join('\n    ');
 
   return {
@@ -39,11 +40,3 @@ const seoHook: PluginHook = (payload) => {
     markup: `${tags}\n    ${payload.markup ?? ''}`,
   };
 };
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}

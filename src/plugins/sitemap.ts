@@ -2,6 +2,7 @@
 // Hooks into the render:sitemap pipeline. Generates a standards-compliant XML sitemap.
 
 import type { PluginHook, CMSRegistry } from '../cms/registry.js';
+import { escXml } from '../cms/escape.js';
 
 export function initSitemapPlugin(registry: CMSRegistry): void {
   registry.register('render:sitemap', sitemapHook);
@@ -14,8 +15,8 @@ const sitemapHook: PluginHook = (payload) => {
   const urls = posts
     .filter((p) => p.slug)
     .map((p) => `  <url>
-    <loc>${baseUrl}/${escapeXml(p.slug)}</loc>
-    <lastmod>${escapeXml(p.updated_at)}</lastmod>
+    <loc>${baseUrl}/${escXml(p.slug)}</loc>
+    <lastmod>${escXml(p.updated_at)}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`)
@@ -29,11 +30,3 @@ ${urls}
   return { ...payload, markup: xml };
 };
 
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}

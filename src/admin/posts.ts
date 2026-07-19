@@ -2,7 +2,7 @@
 // The post-editor widget JS lives in src/admin/editor.ts (one shared copy of
 // the fragile editor strings); Phase 4 swaps that module for a rich-text editor.
 
-import { escAttr } from "../cms/escape.js";
+import { esc } from "../cms/escape.js";
 import { sanitizePostHtml } from "../cms/sanitize.js";
 import { SCHEDULE_TOGGLE_SCRIPT, EDITOR_FORMAT_SCRIPTS, PASTE_IMAGE_SCRIPT, DROP_IMAGE_SCRIPT } from "./editor.js";
 
@@ -144,10 +144,10 @@ export function editBody(post: {
   return `<h2 style="margin-bottom:1.5rem">Edit Post</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
-<div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(post.title)}" /></div>
-<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(post.slug)}" /></div>
+<div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${esc(post.title)}" /></div>
+<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${esc(post.slug)}" /></div>
 </div>
-<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><textarea id="excerpt" name="excerpt" rows="2">${escAttr(String(post.excerpt ?? ""))}</textarea></div>
+<div class="form-group"><label for="excerpt">Excerpt <span style="color:#64748b;font-weight:400">(optional)</span></label><textarea id="excerpt" name="excerpt" rows="2">${esc(String(post.excerpt ?? ""))}</textarea></div>
  <div class="form-group">
   <label for="content">Content <span style="color:#64748b;font-weight:400">(Rich text)</span></label>
   <div class="toolbar">
@@ -175,7 +175,7 @@ export function editBody(post: {
 <div class="form-group"><label><input type="checkbox" id="schedule" onchange="scheduleToggle()" ${scheduleChecked} /> Schedule for later</label>
 <input type="datetime-local" id="publish_at" name="publish_at" style="${hasSchedule ? "display:block" : "display:none"};margin-top:0.4rem" value="${post.publish_at ? post.publish_at.replace("Z", "").substring(0, 19) : ""}" /></div>
 ${previewLink ? '<div style="font-size:0.85rem;margin-bottom:0.75rem"><a href="' + previewLink + '" target="_blank" style="color:#3b82f6;text-decoration:none">Preview unpublished post ↗</a></div>' : ""}
-<div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${escAttr(post.updated_at)}</div>
+<div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${esc(post.updated_at)}</div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Update Post</button>
 <a href="/admin/posts" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>

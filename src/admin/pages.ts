@@ -1,6 +1,6 @@
 // src/admin/pages.ts — pages admin: list, new-page form, edit-page form.
 
-import { escAttr } from "../cms/escape.js";
+import { esc } from "../cms/escape.js";
 import { sanitizePostHtml } from "../cms/sanitize.js";
 import { EDITOR_FORMAT_SCRIPTS, PASTE_IMAGE_SCRIPT, DROP_IMAGE_SCRIPT } from "./editor.js";
 
@@ -90,12 +90,12 @@ export function editPageBody(page: {
   return `<h2 style="margin-bottom:1.5rem">Edit Page</h2>
 <form id="form" style="max-width:800px">
 <div class="row">
-<div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${escAttr(page.title)}" /></div>
-<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${escAttr(page.slug)}" /></div>
+<div class="form-group"><label for="title">Title</label><input type="text" id="title" name="title" required value="${esc(page.title)}" /></div>
+<div class="form-group"><label for="slug">Slug</label><input type="text" id="slug" name="slug" required value="${esc(page.slug)}" /></div>
 </div>
 <div class="form-group"><label for="content">Content <span style="color:#64748b;font-weight:400">(Rich text)</span></label><div class="toolbar"><button type="button" onmousedown="event.preventDefault();rteCmd('bold')" title="Bold" aria-label="Bold"><strong>B</strong></button><button type="button" onmousedown="event.preventDefault();rteCmd('italic')" title="Italic" aria-label="Italic"><em>I</em></button><span class="sep"></span><button type="button" onmousedown="event.preventDefault();rteHead('<h2>')" title="Heading 2" aria-label="Heading 2">H2</button><button type="button" onmousedown="event.preventDefault();rteHead('<h3>')" title="Heading 3" aria-label="Heading 3">H3</button><span class="sep"></span><button type="button" onmousedown="rteLink(event)" title="Link" aria-label="Insert link">Link</button><button type="button" onmousedown="rteImg(event)" title="Image by URL" aria-label="Insert image by URL">Img</button><span class="sep"></span><button type="button" onmousedown="event.preventDefault();rteHead('<blockquote>')" title="Blockquote" aria-label="Insert blockquote">Quote</button><button type="button" onmousedown="event.preventDefault();rteCmd('insertUnorderedList')" title="List item" aria-label="Insert list item">List</button></div><div id="editor-wrap" style="min-height:320px"><div id="content" class="rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Page content" data-ph="Write your page…">${sanitizePostHtml(page.content)}</div></div></div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" ${checked} /> Published</label></div>
-<div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${escAttr(page.updated_at)}</div>
+<div style="font-size:0.8rem;color:#64748b;margin-bottom:1rem">Last updated: ${esc(page.updated_at)}</div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Update Page</button>
 <a href="/admin/pages" class="btn" style="background:#e5e7eb;color:#1e293b">Cancel</a>
