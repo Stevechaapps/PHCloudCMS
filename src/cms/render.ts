@@ -76,9 +76,7 @@ export function shellFull(
     THEME_TOGGLE_BTN +
     '</nav></div></header><main id="main">' +
     bodyHtml +
-    '</main><footer><div class="inner"><div class="brand"><strong>' +
-    esc(siteName) +
-    '</strong><p>A minimalist publishing space.</p></div><div class="links"><div class="links-group"><span>Site</span><a href="/">Home</a><a href="/search">Search</a></div><div class="links-group"><span>Resources</span><a href="/feed.xml">RSS Feed</a><a href="/sitemap.xml">Sitemap</a><a href="/admin/login">Admin</a></div><div class="links-group"><span>Credits</span><a href="https://github.com/Stevechaapps/phcloudcms" target="_blank" rel="noopener">PHCloud CMS</a></div></div></div></footer>' +
+    '</main><footer><div class="inner"><p class="colophon">Powered by <a href="https://github.com/Stevechaapps/phcloudcms" target="_blank" rel="noopener">PHCloud CMS</a> on <a href="https://cloudflare.com" target="_blank" rel="noopener">Cloudflare</a></p></div></footer>' +
     THEME_TOGGLE_SCRIPT +
     '</body></html>'
   );

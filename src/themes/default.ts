@@ -12,16 +12,9 @@ header nav a:hover{color:var(--text)}
 .search-wrap input{padding:0.4rem 0.75rem;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:inherit;background:var(--bg);color:var(--text);width:160px;transition:width 0.2s,border-color 0.2s,box-shadow 0.2s}
 .search-wrap input:focus{outline:none;width:220px;border-color:var(--accent);box-shadow:0 0 0 3px rgba(180,83,9,0.1)}
 main{max-width:720px;margin:4rem auto;padding:0 1.5rem;min-height:70vh}
-footer{background:var(--surface);border-top:1px solid var(--border);padding:3rem 1.5rem;margin-top:5rem}
-footer .inner{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:start}
-footer .brand{display:flex;flex-direction:column;gap:0.5rem}
-footer .brand strong{font-size:1.1rem;color:var(--text)}
-footer .brand p{font-size:0.85rem;color:var(--text-muted);margin:0}
-footer .links{display:flex;gap:2rem}
-footer .links-group{display:flex;flex-direction:column;gap:0.5rem}
-footer .links-group span{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);font-weight:600}
-footer .links-group a{font-size:0.85rem;color:var(--text-light)}
-footer .links-group a:hover{color:var(--text)}
+footer{background:var(--surface);border-top:1px solid var(--border);padding:2rem 1.5rem;margin-top:5rem;text-align:center}
+footer .inner{max-width:1000px;margin:0 auto}
+.colophon{font-size:0.8rem;color:var(--text-muted)}
 h1{font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;line-height:1.2;margin-bottom:1.5rem;color:var(--text)}
 h2{font-size:1.75rem;font-weight:700;margin-bottom:1rem;letter-spacing:-0.01em}
 h3{font-size:1.25rem;font-weight:600;margin-bottom:0.75rem}
@@ -56,7 +49,7 @@ p{margin-bottom:1.25rem;color:var(--text-light)}
 .tag-pill{display:inline-block;padding:0.2rem 0.6rem;font-size:0.75rem;border-radius:99px;background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);margin-right:0.4rem;margin-bottom:0.4rem;font-weight:600;transition:background 0.2s}
 .tag-pill:hover{background:color-mix(in srgb, var(--accent) 20%, transparent)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
-@media(max-width:768px){header .inner{padding:0 1rem}header nav{display:none}main{margin:2rem auto;padding:0 1rem}h1{font-size:2rem}.site-title h1{font-size:2.2rem}footer .inner{grid-template-columns:1fr}}
+@media(max-width:768px){header .inner{padding:0 1rem}header nav{display:none}main{margin:2rem auto;padding:0 1rem}h1{font-size:2rem}.site-title h1{font-size:2.2rem}}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f172a;--surface:#1e293b;--text:#f1f5f9;--text-light:#94a3b8;--text-muted:#64748b;--accent:#f97316;--accent-hover:#fb923c;--border:#334155}.post-content code{background:#334155}.post-content blockquote{background:color-mix(in srgb, var(--accent) 12%, transparent)}}
 :root[data-theme="dark"]{--bg:#0f172a;--surface:#1e293b;--text:#f1f5f9;--text-light:#94a3b8;--text-muted:#64748b;--accent:#f97316;--accent-hover:#fb923c;--border:#334155}
 :root[data-theme="dark"] .post-content code{background:#334155}
