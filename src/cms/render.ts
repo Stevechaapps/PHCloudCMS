@@ -130,7 +130,7 @@ export function renderPostList(
     html +=
       '<h2><a href="/' +
       esc(p.slug) +
-      '"> ' +
+      '">' +
       esc(p.title) +
       '</a></h2>';
     if (p.excerpt)

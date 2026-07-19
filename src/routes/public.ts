@@ -327,30 +327,34 @@ export function registerPublicRoutes(app: App): void {
       if (previewToken) {
         post = await db
           .prepare(
-            "SELECT slug, title, content, excerpt, updated_at, type FROM posts WHERE slug = ? AND preview_token = ?",
+            "SELECT id, slug, title, content, excerpt, updated_at, type, publish_at FROM posts WHERE slug = ? AND preview_token = ?",
           )
           .bind(slug, previewToken)
           .first<{
+            id: number;
             slug: string;
             title: string;
             content: string;
             excerpt: string;
             updated_at: string;
             type: string;
+            publish_at: string | null;
           }>();
       } else {
         post = await db
           .prepare(
-            "SELECT slug, title, content, excerpt, updated_at, type FROM posts WHERE slug = ? AND published = 1",
+            "SELECT id, slug, title, content, excerpt, updated_at, type, publish_at FROM posts WHERE slug = ? AND published = 1",
           )
           .bind(slug)
           .first<{
+            id: number;
             slug: string;
             title: string;
             content: string;
             excerpt: string;
             updated_at: string;
             type: string;
+            publish_at: string | null;
           }>();
       }
       if (!post)
@@ -401,6 +405,7 @@ export function registerPublicRoutes(app: App): void {
         title: post.title,
         description: post.excerpt ?? "",
         markup: "",
+        post,
         meta: {
           title: post.title,
           description: post.excerpt ?? "",
