@@ -8,15 +8,13 @@
 // (Phase 4: replaced the markdown textarea + live POST /api/preview with
 // this rich-text editor; dropped the marked dependency.)
 
-// Schedule-for-later checkbox toggle (DOM: #schedule, #publish_at, #published).
-export const SCHEDULE_TOGGLE_SCRIPT = `function scheduleToggle(){var s=document.getElementById('schedule'),p=document.getElementById('publish_at'),c=document.getElementById('published');if(s.checked){p.style.display='block';c.checked=false}else{p.style.display='none';p.value=''}}`;
+// Schedule-for-later checkbox toggle (DOM: #schedule, #publish_date, #publish_hour, #publish_minute, #publish_ampm, #published).
+export const SCHEDULE_TOGGLE_SCRIPT = `function scheduleToggle(){var s=document.getElementById('schedule'),c=document.getElementById('published');['publish_date','publish_hour','publish_minute','publish_ampm'].forEach(function(id){var e=document.getElementById(id);if(s.checked){e.style.display='inline-block'}else{e.style.display='none';e.value=''}});if(s.checked)c.checked=false}`;
 
-// Scheduled-post datetime round-trips. datetime-local gives a timezone-naive
-// local string (e.g. "2026-07-19T15:00"); the server compares publish_at to a
-// UTC ISO now(), so a naive local string publishes at the wrong wall-clock
-// time (off by the user's UTC offset). Convert to UTC ISO on submit, and
-// format the stored UTC value back into the local box on edit load.
-export const SCHEDULER_SCRIPT = `function phIso(localVal){if(!localVal)return null;var d=new Date(localVal);if(isNaN(d.getTime()))return null;return d.toISOString()}function phLocalFromUtc(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';function p(n){return String(n).padStart(2,'0')}return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}`;
+// Scheduled-post datetime round-trips. The user picks date + hour (1-12) +
+// AM/PM + minute in their local timezone; phIso converts to UTC ISO for
+// the server, phLocalFromUtc converts the stored UTC back to local values.
+export const SCHEDULER_SCRIPT = `function phIso(dv,hv,mv,ampm){if(!dv||hv===void 0||mv===void 0)return null;var h=Number(hv);if(ampm==='PM'&&h!==12)h+=12;if(ampm==='AM'&&h===12)h=0;var d=new Date(dv+'T'+(h<10?'0':'')+h+':'+(mv<10?'0':'')+mv);if(isNaN(d.getTime()))return null;return d.toISOString()}function phLocalFromUtc(iso){if(!iso)return null;var d=new Date(iso);if(isNaN(d.getTime()))return null;var h=d.getHours(),a='AM';if(h>=12){a='PM';if(h>12)h-=12}if(h===0)h=12;return{date:d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate(),hour:h,minute:d.getMinutes(),ampm:a}}`;
 
 // Toolbar commands + a selection save/restore used across the async image
 // upload. Toolbar buttons call these from onmousedown (with preventDefault so

@@ -76,7 +76,12 @@ export function newPostBody(): string {
 </div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" /> Publish immediately</label></div>
 <div class="form-group"><label><input type="checkbox" id="schedule" onchange="scheduleToggle()" /> Schedule for later</label>
-<input type="datetime-local" id="publish_at" name="publish_at" style="display:none;margin-top:0.4rem" /></div>
+<div style="margin-top:0.4rem;display:flex;gap:0.5rem;align-items:center">
+<input type="date" id="publish_date" name="publish_date" style="display:none" />
+<select id="publish_hour" name="publish_hour" style="display:none;padding:0.3rem"><option value="">HH</option>${Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')}</select>
+<select id="publish_minute" name="publish_minute" style="display:none;padding:0.3rem"><option value="">MM</option>${Array.from({length:60},(_,i)=>'<option value="'+i+'">'+(i<10?'0':'')+i+'</option>').join('')}</select>
+<select id="publish_ampm" name="publish_ampm" style="display:none;padding:0.3rem"><option value="">-</option><option value="AM">AM</option><option value="PM">PM</option></select>
+</div></div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Save Post</button>
 <a href="/admin/posts" class="btn" style="background:var(--ad-cancel);color:var(--ad-cancel-text)">Cancel</a>
@@ -115,9 +120,9 @@ slug:String(fd.get('slug')||''),
 content:contentEl.innerHTML,
 excerpt:String(fd.get('excerpt')||''),
 published:document.getElementById('published').checked,
-publish_at:phIso(document.getElementById('publish_at').value),
+publish_at:phIso(document.getElementById('publish_date').value,document.getElementById('publish_hour').value,document.getElementById('publish_minute').value,document.getElementById('publish_ampm').value),
 tag_ids:getTagIds()
-})}).then(function(res){
+})).then(function(res){
 if(res.ok){
 res.json().then(function(p){
 status.style.color='#16a34a';
@@ -183,7 +188,12 @@ export function editBody(post: {
 </div>
 <div class="form-group"><label><input type="checkbox" id="published" name="published" ${checked} /> Published</label></div>
 <div class="form-group"><label><input type="checkbox" id="schedule" onchange="scheduleToggle()" ${scheduleChecked} /> Schedule for later</label>
-<input type="datetime-local" id="publish_at" name="publish_at" style="${hasSchedule ? "display:block" : "display:none"};margin-top:0.4rem" value="" /></div>
+<div style="margin-top:0.4rem;display:flex;gap:0.5rem;align-items:center">
+<input type="date" id="publish_date" name="publish_date" style="${hasSchedule ? "display:inline-block" : "display:none"}" />
+<select id="publish_hour" name="publish_hour" style="${hasSchedule ? "display:inline-block" : "display:none"};padding:0.3rem"><option value="">HH</option>${Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')}</select>
+<select id="publish_minute" name="publish_minute" style="${hasSchedule ? "display:inline-block" : "display:none"};padding:0.3rem"><option value="">MM</option>${Array.from({length:60},(_,i)=>'<option value="'+i+'">'+(i<10?'0':'')+i+'</option>').join('')}</select>
+<select id="publish_ampm" name="publish_ampm" style="${hasSchedule ? "display:inline-block" : "display:none"};padding:0.3rem"><option value="">-</option><option value="AM">AM</option><option value="PM">PM</option></select>
+</div></div>
 ${previewLink ? '<div style="font-size:0.85rem;margin-bottom:0.75rem"><a href="' + previewLink + '" target="_blank" style="color:var(--ad-link);text-decoration:none">Preview unpublished post ↗</a></div>' : ""}
 <div style="font-size:0.8rem;color:var(--ad-muted);margin-bottom:1rem">Last updated: ${esc(post.updated_at)}</div>
 <div style="display:flex;gap:0.75rem">
@@ -202,7 +212,7 @@ slugEl.addEventListener('input',function(){this.dataset.touched='1'});
 titleEl.addEventListener('input',function(){if(slugEl.dataset.touched)return;slugEl.value=titleEl.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')});
 function getTagIds(){var ids=[];[].forEach.call(document.querySelectorAll('.tag-cb:checked'),function(cb){ids.push(Number(cb.value))});return ids}
 function ea(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-var paEl=document.getElementById('publish_at');if(paEl)paEl.value=phLocalFromUtc(${JSON.stringify(post.publish_at)});
+var dt=phLocalFromUtc(${JSON.stringify(post.publish_at)});if(dt){document.getElementById('publish_date').value=dt.date;document.getElementById('publish_hour').value=dt.hour;document.getElementById('publish_minute').value=dt.minute;document.getElementById('publish_ampm').value=dt.ampm}
 var postCatReq=fetch('/api/admin/posts/${id}/tags').then(function(r){return r.json()});
 var allCatReq=fetch('/api/admin/tags').then(function(r){return r.json()});
 Promise.all([postCatReq,allCatReq]).then(function(results){
@@ -231,7 +241,7 @@ slug:String(fd.get('slug')||''),
 content:contentEl.innerHTML,
 excerpt:String(fd.get('excerpt')||''),
 published:document.getElementById('published').checked,
-publish_at:phIso(document.getElementById('publish_at').value),
+publish_at:phIso(document.getElementById('publish_date').value,document.getElementById('publish_hour').value,document.getElementById('publish_minute').value,document.getElementById('publish_ampm').value),
 tag_ids:getTagIds()
 })}).then(function(res){
 if(res.ok){status.style.color='#16a34a';status.textContent='Updated!'}
