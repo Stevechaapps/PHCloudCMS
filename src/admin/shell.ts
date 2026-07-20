@@ -52,7 +52,7 @@ export function adminShell(title: string, bodyHtml: string): string {
     "textarea{min-height:320px;font-family:monospace;font-size:0.9rem;line-height:1.5}",
     ".row{display:flex;gap:1rem}",
     ".row .form-group{flex:1}",
-    "@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{display:none}.topbar{flex-wrap:wrap;height:auto;padding:0.5rem 1rem}.topbar .toplinks{display:flex;flex-wrap:wrap;gap:0.4rem;width:100%;justify-content:center;margin-top:0.4rem;font-size:0.75rem}.topbar .actions{margin-left:auto}table{font-size:0.8rem}th,td{padding:0.4rem 0.5rem}}",
+    "@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{display:none}.topbar{flex-wrap:wrap;height:auto;padding:0.5rem 1rem}.topbar .toplinks{display:flex;flex-wrap:nowrap;gap:0.4rem;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:0.4rem;font-size:0.75rem;white-space:nowrap}.topbar .actions{margin-left:auto}table{font-size:0.8rem}th,td{padding:0.4rem 0.5rem}th:nth-child(2),td:nth-child(2),th:nth-child(4),td:nth-child(4){display:none}}",
     // Dark mode: the admin follows the OS color scheme. No manual toggle in
     // the admin (only the public site has one); the topbar is already dark so
     // it works in both. Surfaces, inputs, toolbar, sidebar, buttons, table
