@@ -32,7 +32,7 @@ app.use("*", async (c, next) => {
   // admin body function. This runs after the handler generates the HTML.
   if (c.res && /text\/html/.test(c.res.headers.get("content-type") ?? "")) {
     const text = await c.res.text();
-    const mod = text.replace(/<script(?![^>]*\bnonce=)(\s)/g, '<script$1nonce="' + nonce + '"$1');
+    const mod = text.replace(/<script(?![^>]*\bnonce=)(?!\/)/g, '<script nonce="' + nonce + '"');
     c.res = new Response(mod, { status: c.res.status, headers: c.res.headers });
   }
   c.header("X-Content-Type-Options", "nosniff");
@@ -43,6 +43,7 @@ app.use("*", async (c, next) => {
   c.header("Content-Security-Policy", [
     "default-src 'self'",
     "script-src 'self' 'nonce-" + nonce + "'",
+    "script-src-attr 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "connect-src 'self'",
