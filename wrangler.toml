@@ -1,4 +1,4 @@
-name = "phcloudcms"
+name = "ph"
 compatibility_date = "2026-07-14"
 main = "src/index.ts"
 workers_dev = true
