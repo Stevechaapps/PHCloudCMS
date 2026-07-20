@@ -1,13 +1,11 @@
 # ☁️ PHCloud CMS
 
-**A tiny, self-hosted CMS that runs entirely on Cloudflare's free tier.**
+**A self-hosted CMS that fits in one Worker. Push to main, it's live. No server, no Docker, no monthly bill.**
 
-One runtime dependency ([Hono](https://hono.dev)). Content lives in D1 (serverless SQLite), images and sessions in KV. No external databases, no S3, no API keys, no credit card. Push to `main` and Cloudflare Workers Builds ships it.
-
-**~80KB compiled** · 38 source files · single Worker · cold start <10ms
+Images, database, sessions, cache — everything runs inside Cloudflare's free tier. One `git push` deploys. Fork it, create a D1 database and a KV namespace, paste two IDs into `wrangler.toml`, and you're running.
 
 ```
-Cloudflare Workers · Hono v4 · D1 + KV · TypeScript · one dependency
+One Worker · D1 (SQLite) · KV · Hono · TypeScript · ~80KB gzipped
 ```
 
 ---
@@ -38,9 +36,9 @@ Cloudflare Workers · Hono v4 · D1 + KV · TypeScript · one dependency
 
 ## What it is
 
-PHCloud is a single-worker CMS for one site. You write posts and pages in a browser-based WYSIWYG editor; they're stored as sanitized HTML in D1 and rendered through a static theme. It ships with tags, RSS, sitemap, search, and SEO meta tags — all inside one Worker.
+PHCloud is a CMS for *one site* — your blog, your portfolio, your small business. You write in a browser, it saves as HTML in D1, and renders through a static theme. Tags, RSS, sitemap, search, SEO — all built in, all inside one Worker.
 
-It is deliberately small: one Hono app, one router, one dependency. There is no build step, no `node_modules` shipped to the edge, and no framework runtime.
+No build step. No `node_modules` on the edge. No framework runtime. One `hono` dependency.
 
 ## Features
 
@@ -98,27 +96,22 @@ KV holds image bytes, sessions, and the rendered-page cache.
 
 ### 4 — Add bindings to wrangler.toml
 
-Workers reads bindings from the config file, not the dashboard. Open `wrangler.toml` in your fork and paste in the two IDs you just copied:
+Workers reads bindings from the config file, not the dashboard. Open `wrangler.toml` in your fork and **replace the two IDs** with the ones you just created:
 
 ```toml
-name = "phcloudcms"
-compatibility_date = "2026-07-14"
-main = "src/index.ts"
-workers_dev = true
-
 [[d1_databases]]
 binding = "DB"
 database_name = "phcloud-db"
-database_id = "<YOUR_D1_DATABASE_ID>"
+database_id = "<paste your D1 database ID here>"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "<YOUR_KV_NAMESPACE_ID>"
+id = "<paste your KV namespace ID here>"
 ```
 
-Commit the change to `main` on your fork.
+> The repo ships with the original author's D1 and KV IDs pre-filled — **you must overwrite them with your own.** Cloudflare Workers Builds wipes dashboard bindings that aren't in `wrangler.toml`, so the file must hold *your* real IDs before you deploy.
 
-> Cloudflare Workers Builds **wipes dashboard bindings that aren't in `wrangler.toml`** on every deploy — so the config file must hold your real IDs before you deploy.
+Commit the change to `main` on your fork.
 
 ### 5 — Deploy
 
