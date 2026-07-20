@@ -27,7 +27,10 @@ fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(s)
 document.getElementById('siteName').value=s.site_name;
 document.getElementById('seoDescription').value=s.seo_description;
 if(s.site_logo){var img=document.createElement('img');img.style.cssText='max-width:120px;max-height:60px;border:1px solid var(--ad-card-bd);border-radius:4px;display:block';document.getElementById('logoPreview').appendChild(img);
-img.onerror=function(){fetch(img.src,{cache:'no-store'}).then(function(r){return r.arrayBuffer().then(function(b){var u=new Uint8Array(b),h='';for(var i=0;i<Math.min(8,u.length);i++)h+=(u[i]<16?'0':'')+u[i].toString(16)+' ';return r.status+' '+r.headers.get('content-type')+' '+b.byteLength+'B head=['+h.trim()+']'})}).then(function(t){var d=document.createElement('div');d.style.cssText='color:#dc2626;font-size:0.72rem;word-break:break-all;margin-top:0.4rem';d.textContent='LOGO BROKEN — '+img.src+' → '+t;document.getElementById('logoPreview').appendChild(d)}).catch(function(e){var d=document.createElement('div');d.style.cssText='color:#dc2626;font-size:0.72rem';d.textContent='LOGO BROKEN — '+img.src+' (probe error: '+e+')';document.getElementById('logoPreview').appendChild(d)})};img.src=s.site_logo}});
+function probe(label){fetch(img.src,{cache:'no-store'}).then(function(r){return r.arrayBuffer().then(function(b){var u=new Uint8Array(b),h='';for(var i=0;i<Math.min(16,u.length);i++)h+=(u[i]<16?'0':'')+u[i].toString(16)+' ';return r.status+' '+(r.headers.get('content-type')||'?')+' '+b.byteLength+'B ['+h.trim()+']'})}).then(function(t){var d=document.createElement('div');d.style.cssText='color:#dc2626;font-size:0.72rem;word-break:break-all;margin-top:0.4rem';d.textContent=label+' → '+t;document.getElementById('logoPreview').appendChild(d)}).catch(function(e){var d=document.createElement('div');d.style.cssText='color:#dc2626;font-size:0.72rem';d.textContent=label+' (probe error: '+e+')';document.getElementById('logoPreview').appendChild(d)})};
+img.onload=function(){probe('LOGO decoded '+img.naturalWidth+'x'+img.naturalHeight+' '+img.src)};
+img.onerror=function(){probe('LOGO BROKEN '+img.src)};
+img.src=s.site_logo}});
 document.getElementById('settingsForm').addEventListener('submit',function(e){
 e.preventDefault();
 var status=document.getElementById('status');

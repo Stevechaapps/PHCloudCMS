@@ -7,7 +7,7 @@ export function imagesBody(): string {
 <style>
 .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem}
 .image-card{background:var(--ad-card);border:1px solid var(--ad-card-bd);border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
-.image-card .thumb{width:100%;height:140px;overflow:hidden;background:#f8fafc;display:flex;align-items:center;justify-content:center}
+.image-card .thumb{width:100%;height:140px;overflow:hidden;background:var(--ad-row-bd);display:flex;align-items:center;justify-content:center}
 .image-card .thumb img{width:100%;height:100%;object-fit:cover}
 .image-card .info{padding:0.6rem;display:flex;flex-direction:column;gap:0.2rem;flex:1}
 .image-card .info .name{font-size:0.8rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
