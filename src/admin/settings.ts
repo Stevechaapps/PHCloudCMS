@@ -8,7 +8,7 @@ export function settingsBody(): string {
 <div class="form-group">
 <label>Site Logo</label>
 <div id="logoPreview" style="margin-bottom:0.5rem"></div>
-<input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+<input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" />
 <p style="color:var(--ad-muted);font-size:0.8rem;margin-top:0.4rem">Recommended: a wide, short logo (about <strong>600×200px</strong>, PNG with transparency). Shrunk to 600px wide if larger; a wider banner works better for the social-share image. Flat logos stay lossless PNG (crisp + small); photo-like logos compress to WebP. Transparency kept.</p>
 </div>
 <button type="submit" class="btn btn-primary">Save Settings</button>
@@ -41,6 +41,7 @@ var img=new Image();
 img.onload=function(){
 var MAX_W=600;
 var w=img.width,h=img.height;
+if(!w||!h){status.style.color='#dc2626';status.textContent='That file has no readable pixel dimensions (SVGs without an embedded width/height do this). Re-save it as a PNG, JPEG, or WebP with a set size and re-upload.';return}
 if(w>MAX_W){h=Math.round(h*MAX_W/w);w=MAX_W}
 var c=document.createElement('canvas');
 c.width=w;c.height=h;

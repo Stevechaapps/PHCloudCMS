@@ -9,7 +9,7 @@ export function adminShell(title: string, bodyHtml: string): string {
     // var(--ad-…) so muted text / cards / surfaces flip correctly in dark mode
     // (the inline literal would otherwise stay light on a dark surface).
     ":root{--ad-card:#fff;--ad-card-bd:#e5e7eb;--ad-row-bd:#f1f5f9;--ad-muted:#475569;--ad-cancel:#e5e7eb;--ad-cancel-text:#1e293b;--ad-active:#0f172a;--ad-link:#3b82f6;--ad-warn-bg:#fef2f2;--ad-warn-bd:#fca5a5;--ad-warn-tx:#b91c1c;--ad-ok:#15803d}",
-    "@media(prefers-color-scheme:dark){:root{--ad-card:#1e293b;--ad-card-bd:#334155;--ad-row-bd:#334155;--ad-muted:#94a3b8;--ad-cancel:#334155;--ad-cancel-text:#f1f5f9;--ad-active:#c2410c;--ad-link:#60a5fa;--ad-warn-bg:rgba(220,38,38,.12);--ad-warn-bd:rgba(248,113,113,.35);--ad-warn-tx:#fca5a5;--ad-ok:#4ade80}}",
+    "@media(prefers-color-scheme:dark){:root{--ad-card:#1e293b;--ad-card-bd:#334155;--ad-row-bd:#334155;--ad-muted:#94a3b8;--ad-cancel:#334155;--ad-cancel-text:#f1f5f9;--ad-active:#9a3412;--ad-link:#60a5fa;--ad-warn-bg:rgba(220,38,38,.12);--ad-warn-bd:rgba(248,113,113,.35);--ad-warn-tx:#fca5a5;--ad-ok:#4ade80}}",
     "body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b}",
     ".topbar{background:#0f172a;color:white;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between}",
     ".topbar a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem}",
@@ -41,7 +41,7 @@ export function adminShell(title: string, bodyHtml: string): string {
     // Active toolbar state: rteSync() sets aria-pressed on the button whose
     // command matches the current selection. Placed after :hover so it wins
     // the specificity tie and the pressed look survives hover.
-    '.toolbar button[aria-pressed="true"]{background:var(--ad-active);color:white}',
+    '.toolbar button[aria-pressed="true"]{background:var(--ad-active);color:#fff;font-weight:700}',
     ".toolbar .sep{width:1px;background:#e2e8f0;margin:0 0.25rem}",
     ".rte{min-height:300px;padding:0.65rem;border:1px solid #cbd5e1;border-radius:4px;font-size:1rem;line-height:1.7;overflow-y:auto;outline:none}",
     ".rte:focus{border-color:#3b82f6}.rte:empty:before{content:attr(data-ph);color:#94a3b8}",
@@ -57,7 +57,7 @@ export function adminShell(title: string, bodyHtml: string): string {
     // the admin (only the public site has one); the topbar is already dark so
     // it works in both. Surfaces, inputs, toolbar, sidebar, buttons, table
     // borders flip to the same slate palette the public dark theme uses.
-    '@media(prefers-color-scheme:dark){body{background:#0f172a;color:#f1f5f9}.sidebar{background:#1e293b;border-right-color:#334155}.sidebar a{color:#e2e8f0}.sidebar a:hover{background:#334155}th,td{border-bottom-color:#334155}th{color:#94a3b8}.content a{color:#f97316}.toolbar{background:#1e293b;border-color:#334155}.toolbar button{color:#94a3b8}.toolbar button:hover{background:#334155;color:#f1f5f9}.toolbar button[aria-pressed="true"]{background:var(--ad-active);color:#fff}.rte{background:#1e293b;color:#f1f5f9;border-color:#475569}.rte code{background:#334155}.rte blockquote{border-color:#475569;color:#94a3b8}input[type="text"],input[type="password"],input[type="search"],input[type="email"],input[type="number"],input[type="url"],input[type="datetime-local"],input[type="date"],textarea{background:#1e293b;color:#f1f5f9;border-color:#475569}.btn-sm{background:#1e293b;border-color:#475569;color:#f1f5f9}.btn-primary{background:#c2410c;color:#fff}.badge-pub{background:rgba(34,197,94,.18);color:#86efac}.badge-draft{background:rgba(245,158,11,.18);color:#fcd34d}.badge-info{background:rgba(59,130,246,.18);color:#93c5fd}}',
+    '@media(prefers-color-scheme:dark){body{background:#0f172a;color:#f1f5f9}.sidebar{background:#1e293b;border-right-color:#334155}.sidebar a{color:#e2e8f0}.sidebar a:hover{background:#334155}th,td{border-bottom-color:#334155}th{color:#94a3b8}.content a{color:#f97316}.toolbar{background:#1e293b;border-color:#334155}.toolbar button{color:#94a3b8}.toolbar button:hover{background:#334155;color:#f1f5f9}.toolbar button[aria-pressed="true"]{background:var(--ad-active);color:#fff;font-weight:700}.rte{background:#1e293b;color:#f1f5f9;border-color:#475569}.rte code{background:#334155}.rte blockquote{border-color:#475569;color:#94a3b8}input[type="text"],input[type="password"],input[type="search"],input[type="email"],input[type="number"],input[type="url"],input[type="datetime-local"],input[type="date"],textarea{background:#1e293b;color:#f1f5f9;border-color:#475569}.btn-sm{background:#1e293b;border-color:#475569;color:#f1f5f9}.btn-primary{background:var(--ad-active);color:#fff;font-weight:600}.badge-pub{background:rgba(34,197,94,.18);color:#86efac}.badge-draft{background:rgba(245,158,11,.18);color:#fcd34d}.badge-info{background:rgba(59,130,246,.18);color:#93c5fd}}',
   ].join(" ");
 
   return `<!DOCTYPE html>
