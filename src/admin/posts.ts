@@ -80,7 +80,7 @@ export function newPostBody(): string {
 <input type="date" id="publish_date" name="publish_date" style="display:none" />
 <select id="publish_hour" name="publish_hour" style="display:none;padding:0.3rem"><option value="">HH</option>${Array.from({length:12},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')}</select>
 <select id="publish_minute" name="publish_minute" style="display:none;padding:0.3rem"><option value="">MM</option>${Array.from({length:60},(_,i)=>'<option value="'+i+'">'+(i<10?'0':'')+i+'</option>').join('')}</select>
-<select id="publish_ampm" name="publish_ampm" style="display:none;padding:0.3rem"><option value="">-</option><option value="AM">AM</option><option value="PM">PM</option></select>
+<select id="publish_ampm" name="publish_ampm" style="display:none;padding:0.3rem"><option value="AM">AM</option><option value="PM">PM</option></select>
 </div></div>
 <div style="display:flex;gap:0.75rem">
 <button type="submit" class="btn btn-primary">Save Post</button>
