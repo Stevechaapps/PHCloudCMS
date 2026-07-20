@@ -122,7 +122,7 @@ excerpt:String(fd.get('excerpt')||''),
 published:document.getElementById('published').checked,
 publish_at:phIso(document.getElementById('publish_date').value,document.getElementById('publish_hour').value,document.getElementById('publish_minute').value,document.getElementById('publish_ampm').value),
 tag_ids:getTagIds()
-})).then(function(res){
+})}).then(function(res){
 if(res.ok){
 res.json().then(function(p){
 status.style.color='#16a34a';
