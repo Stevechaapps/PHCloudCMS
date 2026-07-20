@@ -72,7 +72,7 @@ export function shellFull(
     THEME_INIT_SCRIPT +
     '</head><body><a href="#main" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0">Skip to content</a><header><div class="inner"><a href="/" class="site-name">' +
     (siteLogo
-      ? '<img src="' + esc(siteLogo) + '" alt="' + esc(siteName) + '" style="height:42px;width:auto;vertical-align:middle;max-width:200px"/>'
+      ? '<img src="' + esc(siteLogo) + '" alt="' + esc(siteName) + '" style="height:52px;width:auto;vertical-align:middle;max-width:280px"/>'
       : esc(siteName)) +
     '</a><nav><form action="/search" method="get" class="search-wrap" role="search"><input type="text" name="q" placeholder="Search..." aria-label="Search site"></form>' +
     navHtml +
